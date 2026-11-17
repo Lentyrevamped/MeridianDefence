@@ -3,7 +3,7 @@
 secureblue (hardened Fedora Atomic, GNOME, open NVIDIA) with Meridian branding and Ledger sign-in, for meridian2.
 Built and signed daily by GitHub Actions with BlueBuild. Nothing here touches upstream security settings.
 
-Ledger scope: exactly two uses. Disk unlock at boot (TPM PIN on the laptop, then "Release vault key" on the Ledger: hold + Meridian PIN)
+Ledger scope: exactly two uses. Disk unlock at boot (TPM PIN on the laptop, then "Unlock disk" on the Ledger: hold + Meridian PIN)
 and sign-in (login and lock screen: "Verify identity", hold, no PIN on the Ledger). Admin prompts use the normal password.
 Text contract shown by Plymouth and PAM: `Confirm on your Ledger · code XXXX XXXX XXXX` (the 12-hex code the Ledger shows),
 `Approved on Ledger`, `Rejected on Ledger`.
