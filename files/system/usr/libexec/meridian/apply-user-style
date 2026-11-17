@@ -1,0 +1,12 @@
+#!/bin/sh
+# Copy the Meridian GTK style into the user's config if they have no custom file (or still have our older copy).
+# Never overwrites a file the user wrote. Lets Flatpak apps read it (read-only).
+set -u
+for v in gtk-4.0 gtk-3.0; do
+  src=/usr/share/meridian/$v/gtk.css; dst="${XDG_CONFIG_HOME:-$HOME/.config}/$v/gtk.css"
+  [ -s "$src" ] || continue
+  mkdir -p "$(dirname "$dst")"
+  if [ ! -e "$dst" ] || head -n1 "$dst" | grep -q '^/\* Meridian OS:'; then cp -f "$src" "$dst"; fi
+done
+command -v flatpak >/dev/null && flatpak override --user --filesystem=xdg-config/gtk-4.0:ro --filesystem=xdg-config/gtk-3.0:ro 2>/dev/null
+exit 0

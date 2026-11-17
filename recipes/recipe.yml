@@ -1,0 +1,27 @@
+# yaml-language-server: $schema=https://schema.blue-build.org/recipe-v1.json
+# Meridian OS: secureblue (hardened Fedora Atomic, GNOME, open NVIDIA) + Meridian branding and Ledger sign-in.
+# Rule: only customise through stable hooks. Every Meridian piece must fail back to stock secureblue, never break boot or login.
+name: meridian-os
+description: Meridian OS, a branded secureblue for meridian2. Secured by Meridian.
+base-image: ghcr.io/secureblue/silverblue-nvidia-open-hardened
+image-version: latest
+
+modules:
+  - type: files
+    files:
+      - source: system
+        destination: /
+
+  - type: gschema-overrides
+    include:
+      - zz1-meridian.gschema.override
+
+  - type: script
+    scripts:
+      - 10-os-release.sh        # "Meridian OS" name (About page, boot menu entries), keeps ID=secureblue
+      - 20-plymouth.sh          # boot splash + PIN + Ledger theme, initramfs rebuilt; falls back to stock theme on any error
+      - 30-gnome-extension.sh   # Ledger sign-in UI; enabled only if it declares the image's GNOME version
+      - 40-user-style.sh        # tighter GTK corners per user, Flatpaks included (read-only)
+      - 90-verify.sh            # build fails loudly if a stable piece is missing; fragile pieces only warn
+
+  - type: signing                # signs the image (cosign) and adds our key to the image's container policy

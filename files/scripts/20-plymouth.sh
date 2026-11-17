@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# Install the Meridian Plymouth theme and rebuild the initramfs. If anything fails, keep the stock theme (fail safe).
+set -uo pipefail
+T=/usr/share/plymouth/themes/meridian
+need="meridian.plymouth meridian.script star.png wordmark.png field.png chip.png device.png g-0.png g-F.png gs-0.png"
+ok=1; for n in $need; do [ -s "$T/$n" ] || { echo "WARN missing $T/$n"; ok=0; }; done
+rpm -q plymouth-plugin-script >/dev/null 2>&1 || dnf -y install plymouth-plugin-script || ok=0
+if [ "$ok" = 1 ]; then
+  mkdir -p /etc/plymouth
+  printf '[Daemon]\nTheme=meridian\nShowDelay=0\nDeviceScale=1\n' > /etc/plymouth/plymouthd.conf
+  echo "plymouth: theme meridian"
+else
+  echo "WARN plymouth: Meridian theme incomplete, keeping the stock theme"
+  rm -f /etc/plymouth/plymouthd.conf
+fi
+# Rebuild the initramfs with the image's own dracut config (same as upstream, plus the theme).
+KVER=$(ls /usr/lib/modules | sort -V | tail -1)
+if dracut --no-hostonly --kver "$KVER" --reproducible --zstd --add ostree -f "/tmp/initramfs-$KVER.img"; then
+  mv "/tmp/initramfs-$KVER.img" "/usr/lib/modules/$KVER/initramfs.img"; chmod 0600 "/usr/lib/modules/$KVER/initramfs.img"
+  lsinitrd "/usr/lib/modules/$KVER/initramfs.img" | grep -q "plymouth/themes/meridian/meridian.script" \
+    && echo "initramfs: theme included" || echo "WARN initramfs: theme not found inside (stock splash will show)"
+else
+  echo "WARN dracut failed, keeping upstream initramfs (stock splash)"; rm -f /etc/plymouth/plymouthd.conf
+fi
+exit 0

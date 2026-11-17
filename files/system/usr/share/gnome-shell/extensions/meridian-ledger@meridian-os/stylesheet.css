@@ -1,0 +1,12 @@
+/* Meridian UI system: Inter (Adwaita Sans), 4 pt grid, radii 4/8, 1 px hairlines, no accent colour */
+.meridian-card { spacing: 12px; padding-top: 4px; }
+.meridian-hint { font-size: 15px; color: rgba(241,241,238,0.62); text-align: center; }
+.meridian-chip { border-radius: 4px; background-color: rgba(255,255,255,0.035); border: 1px solid rgba(255,255,255,0.14); }
+.meridian-chip.ok { border-color: rgba(255,255,255,0.34); }
+.meridian-group { font-size: 22px; font-weight: 500; letter-spacing: 3px; padding: 12px 22px; color: #F1F1EE; font-feature-settings: "tnum", "zero"; }
+.meridian-divider { width: 1px; background-color: rgba(255,255,255,0.08); }
+.meridian-status { font-size: 13px; font-weight: 500; color: rgba(241,241,238,0.62); spacing: 8px; }
+.meridian-status.ok, .meridian-status.bad { color: #F1F1EE; }
+.meridian-key { border-radius: 4px; padding: 10px; background-color: rgba(255,255,255,0.035); border: 1px solid rgba(255,255,255,0.08); color: rgba(241,241,238,0.30); }
+.meridian-key:hover { color: rgba(241,241,238,0.62); }
+.meridian-handoff { background-color: #0A0A0C; }

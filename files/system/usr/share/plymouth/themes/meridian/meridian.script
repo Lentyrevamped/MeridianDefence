@@ -1,0 +1,195 @@
+# Meridian OS boot theme (Plymouth script module).
+# States: intro -> pin -> (ledger) -> splash -> quit (final frame = mark + wordmark, kept for the GDM hand-off).
+# Ledger step is driven by plymouth messages from the initrd helper (plain text, so a stock theme still shows them):
+#   "Confirm on your Ledger · code 4F2A 91C7"   show the confirm screen with that code
+#   "Approved on Ledger"                         approved
+#   "Rejected on Ledger"                         rejected
+# Art is rendered for an 1800 px tall panel and scaled by S for other panels. No fonts needed in the initrd.
+
+Window.SetBackgroundTopColor(0.0392, 0.0392, 0.0471);
+Window.SetBackgroundBottomColor(0.0392, 0.0392, 0.0471);
+W = Window.GetWidth(); H = Window.GetHeight(); X0 = Window.GetX(); Y0 = Window.GetY();
+S = H / 1800; if (S > 1.6) S = 1.6;
+CX = X0 + W / 2;
+fun Y(v) { return Y0 + H / 2 + (v - 900) * S; }      # design y (0..1800) -> screen y, centred
+FPS = 50;
+
+fun ld(name) { ld_im = Image(name + ".png"); if (S < 0.999 || S > 1.001) ld_im = ld_im.Scale(Math.Int(ld_im.GetWidth() * S + 0.5), Math.Int(ld_im.GetHeight() * S + 0.5)); return ld_im; }
+fun mk(img, z) { mk_s = Sprite(img); mk_s.SetZ(z); mk_s.SetOpacity(0); return mk_s; }
+fun put(sp, img, cx, cy) { sp.SetX(Math.Int(cx - img.GetWidth() / 2)); sp.SetY(Math.Int(cy - img.GetHeight() / 2)); }
+fun clamp01(x) { if (x < 0) return 0; if (x > 1) return 1; return x; }
+fun ease(x) { x = clamp01(x); return 1 - (1 - x) * (1 - x) * (1 - x); }          # decelerate
+fun mix(a, b, k) { return a + (b - a) * k; }
+
+# ---- assets ----
+star_src = Image("star.png");                      # master, scaled per frame
+word_img = ld("wordmark"); sign_img = ld("signoff"); white = Image("white.png");
+t_enter = ld("t-enter"); t_pass = ld("t-pass"); t_bad = ld("t-incorrect"); t_sub = ld("t-sub"); t_hint = ld("t-errhint");
+t_led = ld("t-ledger"); t_led_sub = ld("t-ledger-sub"); t_ok = ld("t-approved"); t_ok_sub = ld("t-approved-sub");
+t_rej = ld("t-rejected"); t_rej_sub = ld("t-rejected-sub");
+st_wait = ld("st-wait"); st_ok = ld("st-ok"); spin_src = ld("spinner");
+f_img = ld("field"); f_err = ld("field-error"); ph_img = ld("ph"); sub_off = ld("submit-off"); sub_on = ld("submit-on");
+dot_img = ld("dot"); caret_img = ld("caret");
+chip_img = ld("chip"); chip_ok = ld("chip-ok"); dev_img = ld("device"); dev_ok = ld("device-ok");
+HEX = "0123456789ABCDEF";
+for (hx = 0; hx < 16; hx++) { hc = HEX.CharAt(hx); glyph[hc] = ld("g-" + hc); glyph_s[hc] = ld("gs-" + hc); }
+
+# ---- sprites ----
+star = Sprite(); star.SetZ(20);
+word = mk(word_img, 10); sign = mk(sign_img, 10);
+track = Sprite(); track.SetZ(10); bar = Sprite(); bar.SetZ(11);
+title = mk(t_enter, 10); sub = mk(t_sub, 10); hint = mk(t_hint, 10);
+field = mk(f_img, 10); ph = mk(ph_img, 12); submit = mk(sub_off, 12); caret = mk(caret_img, 13);
+led_title = mk(t_led, 10); led_sub = mk(t_led_sub, 10); chip = mk(chip_img, 10); dev = mk(dev_img, 10);
+st = mk(st_wait, 10); spin = Sprite(); spin.SetZ(11);
+holdtr = Sprite(); holdtr.SetZ(12); holdbar = Sprite(); holdbar.SetZ(13);
+for (ci0 = 0; ci0 < 8; ci0++) { cg[ci0] = Sprite(); cg[ci0].SetZ(12); sg[ci0] = Sprite(); sg[ci0].SetZ(14); }
+ndots = 0;
+
+# ---- state ----
+mode = "intro"; tm = 0; t_mode = 0;              # tm = seconds since start, t_mode = seconds in mode
+bullets = 0; submitted = 0; err = 0; t_err = -10; passmode = 0;
+led_state = "wait"; t_led_ok = -10; code = "";
+progress = 0; quitting = 0; pin_seen = 0;
+
+fun set_mode(m) { global.mode = m; global.t_mode = 0; }
+
+# ---- callbacks ----
+fun password_cb(prompt, b) {
+  if (mode != "pin") {
+    if (submitted && mode == "wait") { global.err = 1; global.t_err = tm; }
+    set_mode("pin");
+  }
+  global.pin_seen = 1;
+  # recovery-key prompt does not mention a PIN
+  global.passmode = 1; pj = 0; while (prompt.CharAt(pj + 2) != "") { if (prompt.CharAt(pj) == "P" && prompt.CharAt(pj + 1) == "I" && prompt.CharAt(pj + 2) == "N") global.passmode = 0; pj++; }
+  if (b > 0 && err && bullets == 0 && tm - t_err > 0.5) global.err = 0;   # typing again clears the error look
+  global.bullets = b;
+}
+Plymouth.SetDisplayPasswordFunction(password_cb);
+
+fun normal_cb() {
+  if (mode == "pin") { global.submitted = (bullets > 0); set_mode("wait"); }
+}
+Plymouth.SetDisplayNormalFunction(normal_cb);
+
+fun starts(text, pre) { k = 0; while (pre.CharAt(k) != "") { if (text.CharAt(k) != pre.CharAt(k)) return 0; k++; } return 1; }
+fun message_cb(text) {
+  # Human-readable on purpose: with a stock theme the same text is simply printed.
+  if (starts(text, "Confirm on your Ledger")) {
+    # code = the 9 characters after the last "code " ("4F2A 91C7"); spaces dropped
+    k = 0; at = -1; while (text.CharAt(k + 4) != "") { if (text.CharAt(k) == "c" && text.CharAt(k + 1) == "o" && text.CharAt(k + 2) == "d" && text.CharAt(k + 3) == "e" && text.CharAt(k + 4) == " ") at = k + 5; k++; }
+    cc = ""; if (at >= 0) { k = at; while (text.CharAt(k) != "") { ch = text.CharAt(k); if (ch != " ") cc = cc + ch; k++; } }
+    global.code = cc; global.led_state = "wait"; global.err = 0; set_mode("ledger");
+  } else if (starts(text, "Approved on Ledger")) { global.led_state = "ok"; global.t_led_ok = tm; }
+  else if (starts(text, "Rejected on Ledger")) { global.led_state = "fail"; }
+}
+Plymouth.SetMessageFunction(message_cb);
+
+fun progress_cb(duration, p) { global.progress = p; }
+Plymouth.SetBootProgressFunction(progress_cb);
+
+fun quit_cb() { global.quitting = 1; refresh(); }
+Plymouth.SetQuitFunction(quit_cb);
+
+# ---- drawing helpers ----
+fun show(sp, img, cx, cy, op) { sp.SetImage(img); put(sp, img, cx, cy); sp.SetOpacity(op); }
+fun hide(sp) { sp.SetOpacity(0); }
+fun line(sp, x, y, w, h, op) { if (w < 1) w = 1; if (h < 1) h = 1; ln_im = white.Scale(Math.Int(w), Math.Int(h)); sp.SetImage(ln_im); sp.SetX(Math.Int(x)); sp.SetY(Math.Int(y)); sp.SetOpacity(op); }
+
+fun draw_star(h, cy, op) {
+  hh = Math.Int(h * S); ww = Math.Int(hh * star_src.GetWidth() / star_src.GetHeight());
+  if (hh < 2) hh = 2; if (ww < 1) ww = 1;
+  if (hh != star_h) { global.star_img = star_src.Scale(ww, hh); global.star_h = hh; }
+  star.SetImage(star_img); put(star, star_img, CX, Y(cy)); star.SetOpacity(op);
+}
+
+# ---- frame ----
+grow = 0; pin_op = 0; led_op = 0; splash_op = 0;
+fun refresh() {
+  global.tm += 1 / FPS; global.t_mode += 1 / FPS;
+  # fall into the splash when nothing asks for input
+  if (mode == "intro" && tm > 2.5) set_mode("splash");
+  if (mode == "wait" && t_mode > 0.9) set_mode("splash");
+  if (mode == "ledger" && led_state == "ok" && tm - t_led_ok > 0.7) set_mode("splash");
+
+  # targets, eased towards each frame (about 300 ms)
+  k = 0.12;
+  if (mode == "pin" || mode == "wait" && t_mode < 0.25) pt = 1; else pt = 0;
+  if (mode == "ledger") lt = 1; else lt = 0;
+  if (mode == "splash") gt = 1; else gt = 0;
+  global.pin_op = mix(pin_op, pt, k * 1.4); global.led_op = mix(led_op, lt, k * 1.2); global.grow = mix(grow, gt, 0.06);
+  if (mode == "splash" && t_mode > 0.35) global.splash_op = mix(splash_op, 1, 0.08); else if (mode != "splash") global.splash_op = mix(splash_op, 0, 0.2);
+
+  # mark: 80 px @585 (prompts) -> 245 px @765 (splash)
+  g = ease(grow);
+  intro_op = clamp01(tm / 0.6);
+  draw_star(mix(80, 245, g), mix(585, 765, g), intro_op);
+  sign.SetOpacity(0.5 * intro_op); put(sign, sign_img, CX, Y(1722));
+
+  # ---- PIN ----
+  if (pin_op > 0.01) {
+    dy = (1 - pin_op) * -8 * S; o = pin_op;
+    if (err) ti = t_bad; else if (passmode) ti = t_pass; else ti = t_enter;
+    show(title, ti, CX, Y(688) + dy, o); show(sub, t_sub, CX, Y(721) + dy, o);
+    # shake: 10 px, 3.5 cycles, quadratic decay over 450 ms
+    tau = (tm - t_err) / 0.45; sx = 0;
+    if (tau > 0 && tau < 1) sx = 12.5 * S * Math.Sin(2 * Math.Pi * 3.5 * tau) * (1 - tau) * (1 - tau);
+    if (err) fi = f_err; else fi = f_img;
+    fx = CX + sx; fy = Y(795) + dy;
+    show(field, fi, fx, fy, o);
+    left = fx - fi.GetWidth() / 2 + 26.25 * S;
+    # dots
+    nb = bullets; if (nb > 14) nb = 14;
+    for (i = 0; i < nb; i++) { if (i >= ndots) { global.dots[i] = Sprite(dot_img); global.dots[i].SetZ(12); global.ndots = i + 1; }
+      dots[i].SetX(Math.Int(left + i * 22.5 * S)); dots[i].SetY(Math.Int(fy - dot_img.GetHeight() / 2)); dots[i].SetOpacity(o); }
+    for (i = nb; i < ndots; i++) dots[i].SetOpacity(0);
+    blink = Math.Int(tm * 1.9) % 2 == 0;
+    if (nb > 0) cxp = left + nb * 22.5 * S + 2 * S; else cxp = left;
+    caret.SetX(Math.Int(cxp)); caret.SetY(Math.Int(fy - caret_img.GetHeight() / 2)); if (blink) caret.SetOpacity(o); else caret.SetOpacity(0);
+    if (nb == 0) { ph.SetX(Math.Int(left + 4 * S)); ph.SetY(Math.Int(fy - ph_img.GetHeight() / 2)); ph.SetOpacity(o); } else ph.SetOpacity(0);
+    if (nb > 0) si = sub_on; else si = sub_off;
+    show(submit, si, fx + fi.GetWidth() / 2 - 5 * S - 1.25 * S - 7.5 * S - si.GetWidth() / 2, fy, o);
+    if (err) show(hint, t_hint, CX, Y(856) + dy, o * clamp01((tm - t_err) / 0.25)); else hide(hint);
+  } else { hide(title); hide(sub); hide(field); hide(ph); hide(submit); hide(caret); hide(hint); for (i = 0; i < ndots; i++) dots[i].SetOpacity(0); }
+
+  # ---- Ledger ----
+  if (led_op > 0.01) {
+    o = led_op; dy = (1 - led_op) * 10 * S;
+    isok = (led_state == "ok"); isbad = (led_state == "fail");
+    if (isok) di = dev_ok; else di = dev_img;
+    show(dev, di, CX, Y(698) + dy, o);
+    dl = CX - di.GetWidth() / 2; dt = Y(698) + dy - di.GetHeight() / 2;
+    if (isok) { tt = t_ok; ts = t_ok_sub; } else if (isbad) { tt = t_rej; ts = t_rej_sub; } else { tt = t_led; ts = t_led_sub; }
+    show(led_title, tt, CX, Y(798) + dy, o); show(led_sub, ts, CX, Y(836) + dy, o);
+    if (isok) ci = chip_ok; else ci = chip_img;
+    show(chip, ci, CX, Y(918) + dy, o);
+    cl = CX - ci.GetWidth() / 2; half = ci.GetWidth() / 2;
+    for (i = 0; i < 8; i++) {
+      c = code.CharAt(i);
+      if (c != "" && glyph[c]) {
+        gi = glyph[c]; if (i < 4) gx = cl + 27.5 * S + (i + 0.5) * 21.6 * S; else gx = cl + half + 28 * S + (i - 3.5) * 21.6 * S;
+        show(cg[i], gi, gx, Y(918) + dy, o);
+        if (!isok) { gs = glyph_s[c]; j = i; if (i >= 4) j = i + 1; show(sg[i], gs, dl + (45 + (j + 0.5) * 10.1) * 1.25 * S, dt + 25.5 * 1.25 * S, o); } else hide(sg[i]);
+      } else { hide(cg[i]); hide(sg[i]); }
+    }
+    if (!isok && !isbad) {
+      line(holdtr, dl + 50 * S, dt + 66 * S, 125 * S, 2 * S, 0.16 * o);
+      ph2 = (tm * 0.6) % 1; sx2 = mix(-40, 125, ph2); x1 = sx2; if (x1 < 0) x1 = 0; x2 = sx2 + 40; if (x2 > 125) x2 = 125;
+      if (x2 > x1) line(holdbar, dl + (50 + x1) * S, dt + 66 * S, (x2 - x1) * S, 2 * S, o); else hide(holdbar);
+      show(st, st_wait, CX, Y(991) + dy, o);
+      sp = spin_src.Rotate(tm * 7.0); spin.SetImage(sp); put(spin, sp, CX - st_wait.GetWidth() / 2 + 9 * S, Y(991) + dy); spin.SetOpacity(o);
+    } else { hide(holdtr); hide(holdbar); hide(spin); if (isok) show(st, st_ok, CX, Y(991) + dy, o); else hide(st); }
+  } else { hide(dev); hide(led_title); hide(led_sub); hide(chip); hide(st); hide(spin); hide(holdtr); hide(holdbar); for (i = 0; i < 8; i++) { hide(cg[i]); hide(sg[i]); } }
+
+  # ---- splash: wordmark + progress ----
+  if (splash_op > 0.01) {
+    show(word, word_img, CX, Y(976), splash_op);
+    if (quitting) po = 0; else po = splash_op;
+    tw = 200 * S; tx = CX - tw / 2; ty = Y(1047);
+    line(track, tx, ty, tw, 2.5 * S, 0.09 * po);
+    pr = progress; if (pr < 0.02) pr = 0.02;
+    line(bar, tx, ty, tw * pr, 2.5 * S, po);
+  } else { hide(word); hide(track); hide(bar); }
+}
+Plymouth.SetRefreshFunction(refresh);

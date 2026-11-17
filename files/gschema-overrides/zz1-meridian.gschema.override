@@ -1,0 +1,19 @@
+# Meridian defaults (users can still change them; stable keys only)
+[org.gnome.desktop.interface]
+color-scheme='prefer-dark'
+accent-color='slate'
+clock-show-weekday=true
+
+[org.gnome.desktop.background]
+picture-uri='file:///usr/share/backgrounds/meridian/meridian-light.png'
+picture-uri-dark='file:///usr/share/backgrounds/meridian/meridian-dark.png'
+picture-options='zoom'
+primary-color='#0A0A0C'
+
+[org.gnome.desktop.screensaver]
+picture-uri='file:///usr/share/backgrounds/meridian/meridian-dark.png'
+picture-options='zoom'
+primary-color='#0A0A0C'
+
+[org.gnome.login-screen]
+logo='/usr/share/meridian/gdm-logo.svg'

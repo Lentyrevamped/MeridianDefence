@@ -1,0 +1,10 @@
+[Unit]
+Description=Meridian OS: apply tighter GTK corners for this user (never overwrites custom styles)
+After=graphical-session-pre.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/meridian/apply-user-style
+
+[Install]
+WantedBy=graphical-session-pre.target
