@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Enable the Meridian sign-in extension only when it declares this image's GNOME Shell major version.
-# Otherwise it stays installed but off: GDM, lock screen and admin prompts fall back to stock GNOME, and the Ledger
+# Otherwise it stays installed but off: GDM and the lock screen fall back to stock GNOME, and the Ledger
 # step still works there as plain text (it is driven by PAM, not by the extension).
 set -uo pipefail
 UUID=meridian-ledger@meridian-os

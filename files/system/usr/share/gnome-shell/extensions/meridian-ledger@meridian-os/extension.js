@@ -1,6 +1,7 @@
 // Meridian Ledger sign-in (GNOME Shell 51). Presentation only: the Ledger check itself runs in PAM / the initrd.
+// Scope: login screen and lock screen only. Admin prompts (polkit) stay stock and use the password.
 // Contract with PAM (plain text, so stock GNOME shows it readably when this extension is off):
-//   info  "Confirm on your Ledger · code 4F2A 91C7"   -> card with the code, spinner
+//   info  "Confirm on your Ledger · code 3387 45BE 5C20" -> card with the 12-hex code (as the Ledger shows it), spinner
 //   info  "Approved on Ledger"                         -> approved state
 //   error "Rejected on Ledger"                         -> rejected state
 // Every hook is wrapped: on any error we log once and fall back to the stock text.
@@ -12,7 +13,7 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as AuthPrompt from 'resource:///org/gnome/shell/gdm/authPrompt.js';
 import {Extension, InjectionManager} from 'resource:///org/gnome/shell/extensions/extension.js';
 
-const CODE_RE = /Confirm on your Ledger.*?code\s+([0-9A-F]{4})\s?([0-9A-F]{4})/;
+const CODE_RE = /Confirm on your Ledger.*?code\s+([0-9A-F]{4})\s?([0-9A-F]{4})\s?([0-9A-F]{4})/;
 const EASE_OUT = Clutter.AnimationMode.EASE_OUT_CUBIC;
 let warned = false;
 const safe = (fn, fallback) => (...a) => { try { return fn(...a); } catch (e) { if (!warned) { warned = true; console.warn(`[meridian] ${e}\n${e.stack}`); } return fallback?.(...a); } };
@@ -22,8 +23,8 @@ class LedgerCard {
         this.actor = new St.BoxLayout({vertical: true, style_class: 'meridian-card', x_align: Clutter.ActorAlign.CENTER, visible: false});
         this._hint = new St.Label({style_class: 'meridian-hint', text: 'Confirm on your Ledger', x_align: Clutter.ActorAlign.CENTER});
         this._chip = new St.BoxLayout({style_class: 'meridian-chip', x_align: Clutter.ActorAlign.CENTER});
-        this._g1 = new St.Label({style_class: 'meridian-group'}); this._g2 = new St.Label({style_class: 'meridian-group'});
-        this._chip.add_child(this._g1); this._chip.add_child(new St.Widget({style_class: 'meridian-divider', y_expand: true})); this._chip.add_child(this._g2);
+        this._g = [0, 1, 2].map(() => new St.Label({style_class: 'meridian-group'}));
+        this._g.forEach((g, i) => { if (i) this._chip.add_child(new St.Widget({style_class: 'meridian-divider', y_expand: true})); this._chip.add_child(g); });
         this._status = new St.BoxLayout({style_class: 'meridian-status', x_align: Clutter.ActorAlign.CENTER});
         this._icon = new St.Icon({icon_size: 14, icon_name: 'process-working-symbolic'});
         this._text = new St.Label({text: 'Waiting for approval', y_align: Clutter.ActorAlign.CENTER});
@@ -31,8 +32,8 @@ class LedgerCard {
         for (const c of [this._hint, this._chip, this._status]) this.actor.add_child(c);
         this._spin = 0;
     }
-    show(g1, g2) {
-        this._g1.text = g1; this._g2.text = g2; this._state('wait');
+    show(groups) {
+        groups.forEach((t, i) => { this._g[i].text = t; }); this._state('wait');
         if (!this.actor.visible) { this.actor.opacity = 0; this.actor.translation_y = 8; this.actor.show(); this.actor.ease({opacity: 255, translation_y: 0, duration: 300, mode: EASE_OUT}); }
         if (!this._timer) this._timer = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 33, () => { this._icon.rotation_angle_z = (this._spin += 12) % 360; return GLib.SOURCE_CONTINUE; });
         this._icon.set_pivot_point(0.5, 0.5);
@@ -65,7 +66,7 @@ export default class MeridianLedger extends Extension {
                 const card = this._meridianCard, msg = message ?? '';
                 const m = CODE_RE.exec(msg);
                 const ledgerText = m || msg.startsWith('Approved on Ledger') || msg.startsWith('Rejected on Ledger');
-                if (m) card.show(m[1], m[2]);
+                if (m) card.show([m[1], m[2], m[3]]);
                 else if (msg.startsWith('Approved on Ledger')) card.ok();
                 else if (msg.startsWith('Rejected on Ledger')) card.bad();
                 else if (msg) card.hide();
@@ -78,30 +79,7 @@ export default class MeridianLedger extends Extension {
             safe(() => { this._meridianCard?.hide(); if (this._message) this._message.opacity = 255; })();
             return orig.apply(this, a);
         });
-        safe(() => this._polkit())();
         if (Main.sessionMode.isGreeter) safe(() => this._handoff())();
-    }
-
-    // Admin prompts (polkit): same text contract, card under the dialog description.
-    async _polkit() {
-        const Polkit = await import('resource:///org/gnome/shell/ui/components/polkitAgent.js');
-        const proto = Polkit.AuthenticationDialog?.prototype; if (!proto) return;
-        const dir = this.path, cards = this._cards;
-        const hook = name => { if (typeof proto[name] !== 'function') return;
-            this._inj.overrideMethod(proto, name, orig => function (session, text, ...rest) {
-                let handled = false;
-                safe(() => {
-                    const m = CODE_RE.exec(text ?? '');
-                    if (m || /^(Approved|Rejected) on Ledger/.test(text ?? '')) {
-                        if (!this._meridianCard) { this._meridianCard = new LedgerCard(dir); cards.add(this._meridianCard); (this._content ?? this.contentLayout).add_child(this._meridianCard.actor); }
-                        if (m) this._meridianCard.show(m[1], m[2]); else if (text.startsWith('Approved')) this._meridianCard.ok(); else this._meridianCard.bad();
-                        handled = true;
-                    }
-                })();
-                return handled ? undefined : orig.call(this, session, text, ...rest);
-            });
-        };
-        hook('_onSessionShowInfo'); hook('_onSessionShowError');
     }
 
     // Boot hand-off: Plymouth's last frame is the mark + wordmark on Ink. Recreate it and dissolve into the greeter.
