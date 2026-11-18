@@ -8,6 +8,15 @@ and sign-in (login and lock screen: "Verify identity", hold, no PIN on the Ledge
 Text contract shown by Plymouth and PAM: `Confirm on your Ledger · code XXXX XXXX XXXX` (the 12-hex code the Ledger shows),
 `Approved on Ledger`, `Rejected on Ledger`.
 
+## Never locks you out (hard rule)
+
+- This image changes **no PAM config and no LUKS/crypttab/TPM slot**. Login is stock GDM with your password; disk unlock is the
+  existing TPM+PIN (or LUKS passphrase / recovery key) prompt, only drawn by the Meridian theme.
+- The Ledger screens appear only when the system itself prints "Confirm on your Ledger · code …". Nothing prints that until a
+  Ledger is enrolled, so with no Ledger (or none registered) everything works as before.
+- When the Ledger pieces are built they stay off until an explicit `enroll`, and the password / TPM+PIN / recovery key keep working.
+- Before any rebase of meridian2: VM test of login with password and disk unlock with TPM+PIN, with no Ledger attached.
+
 ## Daily driver (meridian2, from the 18 Nov setup record)
 
 | Piece | How | Per user |
