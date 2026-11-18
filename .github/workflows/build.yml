@@ -18,11 +18,25 @@ jobs:
       packages: write
       id-token: write
     steps:
+      # A key pasted into the GitHub secrets form can pick up CRLF line endings or stray spaces, which cosign rejects
+      # ("invalid pem block"). Normalise it, mask every line, and report only its shape (never its content).
+      - name: Prepare signing key
+        env:
+          RAW_KEY: ${{ secrets.SIGNING_SECRET }}
+        run: |
+          set -euo pipefail
+          key=$(printf '%s\n' "$RAW_KEY" | tr -d '\r' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' -e '/^$/d')
+          while IFS= read -r line; do [ -n "$line" ] && echo "::add-mask::$line"; done <<<"$key"
+          raw_cr=$(printf '%s' "$RAW_KEY" | tr -cd '\r' | wc -c)
+          echo "signing key: $(printf '%s\n' "$key" | wc -l) lines, CR removed: $raw_cr, header: $(printf '%s\n' "$key" | head -1 | grep -o 'BEGIN [A-Z ]*' || echo none)"
+          printf '%s\n' "$key" | head -1 | grep -q -- '-----BEGIN ENCRYPTED .* PRIVATE KEY-----' || { echo "::error::SIGNING_SECRET is not a cosign private key"; exit 1; }
+          { echo 'MERIDIAN_COSIGN_KEY<<MERIDIAN_EOF'; printf '%s\n' "$key"; echo 'MERIDIAN_EOF'; } >> "$GITHUB_ENV"
+
       - name: Build image
         uses: blue-build/github-action@v1.14
         with:
           recipe: recipe.yml
-          cosign_private_key: ${{ secrets.SIGNING_SECRET }}
+          cosign_private_key: ${{ env.MERIDIAN_COSIGN_KEY }}
           registry_token: ${{ github.token }}
           pr_event_number: ${{ github.event.number }}
           maximize_build_space: true
