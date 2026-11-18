@@ -1,0 +1,15 @@
+# Meridian OS apps, installed per user on first login by meridian-flatpaks.service (already-installed apps are skipped).
+# <remote> <app id>
+# flathub-verified = Flathub, verified apps only. flathub = unfiltered Flathub, limited by /usr/share/meridian/flathub.filter.
+flathub-verified com.brave.Browser
+flathub-verified dev.vencord.Vesktop
+flathub-verified com.github.tchx84.Flatseal
+flathub-verified io.missioncenter.MissionCenter
+flathub-verified org.gnome.Papers
+flathub-verified org.gnome.Loupe
+flathub-verified org.gnome.Showtime
+flathub-verified org.gnome.TextEditor
+flathub-verified org.gnome.Calculator
+flathub-verified org.libreoffice.LibreOffice
+flathub com.google.Chrome
+flathub com.spotify.Client

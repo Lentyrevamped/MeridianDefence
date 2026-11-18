@@ -8,6 +8,19 @@ and sign-in (login and lock screen: "Verify identity", hold, no PIN on the Ledge
 Text contract shown by Plymouth and PAM: `Confirm on your Ledger · code XXXX XXXX XXXX` (the 12-hex code the Ledger shows),
 `Approved on Ledger`, `Rejected on Ledger`.
 
+## Daily driver (meridian2, from the 18 Nov setup record)
+
+| Piece | How | Per user |
+|---|---|---|
+| rclone | `dnf` module | |
+| Google Drive two-way sync | `/usr/bin/meridian-drive` + `meridian-drive-sync.timer` (5 min, globally enabled; does nothing until `meridian-drive setup`), dock entry with right-click actions, default filters `/usr/share/meridian/drive-filters.txt` | Google sign-in in `~/.config/rclone/rclone.conf`; own filters in `~/.config/rclone/meridian-drive-filters.txt` |
+| Keep screen on | `/usr/bin/meridian-keepawake` + "Keep Screen On" app (toggle, on, off) | |
+| Apps | `meridian-flatpaks.service` installs `/usr/share/meridian/flatpaks.list` per user on login: Brave, Vesktop, Flatseal, Mission Center, Papers, Loupe, Showtime, Text Editor, Calculator, LibreOffice (verified Flathub), Chrome and Spotify (unfiltered Flathub limited by `flathub.filter`). Skips anything installed, never removes. | |
+| Brave privacy policy | `/etc/brave/policies/managed/meridian-privacy.json` | |
+| Claude window, dock order | `org.meridian.ClaudeWeb.desktop`, `org.gnome.shell favorite-apps` default | your own dock order wins |
+| Bluetooth | not in the image: `ujust set-bluetooth-modules on` is machine state in /etc and survives rebases | |
+| UGREEN NAS | on hold (no Linux UGREEN client; NAS is remote) | |
+
 ## What it changes, and how safe each piece is against daily upstream updates
 
 | Piece | Hook | Stability | If upstream breaks it |

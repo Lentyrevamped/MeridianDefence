@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Claude
+Comment=Claude in its own window (Chrome app mode)
+Exec=flatpak run com.google.Chrome --app=https://claude.ai/new
+Icon=internet-chat
+Terminal=false
+Categories=Network;
+StartupWMClass=chrome-claude.ai__new-Default

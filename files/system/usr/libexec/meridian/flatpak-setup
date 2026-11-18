@@ -1,0 +1,19 @@
+#!/usr/bin/bash
+# Per-user app setup for Meridian OS. Idempotent: adds the two Flathub remotes if missing, installs listed apps not
+# already present, never removes anything. Re-runs when the image's list changes (checksum stamp).
+set -u
+LIST=/usr/share/meridian/flatpaks.list
+STATE="${XDG_STATE_HOME:-$HOME/.local/state}/meridian"; mkdir -p "$STATE"
+SUM=$(sha256sum <"$LIST")
+[ "$SUM" = "$(cat "$STATE/flatpaks.sum" 2>/dev/null)" ] && exit 0
+REPO=https://dl.flathub.org/repo/flathub.flatpakrepo
+flatpak remote-add --user --if-not-exists --subset=verified flathub-verified "$REPO" || exit 1
+flatpak remote-add --user --if-not-exists --filter=/usr/share/meridian/flathub.filter flathub "$REPO" || exit 1
+fail=0
+while read -r remote app; do
+  case "$remote" in ''|\#*) continue ;; esac
+  flatpak info "$app" >/dev/null 2>&1 && continue
+  flatpak install --user --noninteractive -y "$remote" "$app" || fail=1
+done <"$LIST"
+[ $fail -eq 0 ] && echo "$SUM" >"$STATE/flatpaks.sum"
+exit $fail

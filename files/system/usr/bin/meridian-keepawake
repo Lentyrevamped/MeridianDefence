@@ -1,0 +1,31 @@
+#!/usr/bin/bash
+# meridian-keepawake: toggle "keep screen on" (no dimming, blanking or sleep on AC)
+# Usage: meridian-keepawake [toggle|on|off|status]
+S="${XDG_STATE_HOME:-$HOME/.local/state}/meridian-keepawake"; mkdir -p "$S"
+note() { notify-send -a "Keep screen on" -i video-display "Keep screen on" "$1" 2>/dev/null || true; }
+on() {
+  [ -f "$S/saved" ] || {
+    echo "idle=$(gsettings get org.gnome.desktop.session idle-delay | awk '{print $NF}')" > "$S/saved"
+    echo "ac=$(gsettings get org.gnome.settings-daemon.plugins.power sleep-inactive-ac-type)" >> "$S/saved"
+    echo "dim=$(gsettings get org.gnome.settings-daemon.plugins.power idle-dim)" >> "$S/saved"
+  }
+  gsettings set org.gnome.desktop.session idle-delay 0
+  gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-ac-type nothing
+  gsettings set org.gnome.settings-daemon.plugins.power idle-dim false
+  note "On: the screen stays on while plugged in. On battery the normal sleep still applies."
+}
+off() {
+  idle=300; ac="'suspend'"; dim=true
+  [ -f "$S/saved" ] && . "$S/saved"
+  gsettings set org.gnome.desktop.session idle-delay "$idle"
+  gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-ac-type "$ac"
+  gsettings set org.gnome.settings-daemon.plugins.power idle-dim "$dim"
+  rm -f "$S/saved"
+  note "Off: normal screen timeout restored."
+}
+case "${1:-toggle}" in
+  on) on ;; off) off ;;
+  status) [ -f "$S/saved" ] && echo on || echo off ;;
+  toggle) [ -f "$S/saved" ] && off || on ;;
+  *) sed -n '2,3p' "$0"; exit 2 ;;
+esac

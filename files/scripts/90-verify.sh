@@ -6,6 +6,9 @@ test -s /usr/share/icons/hicolor/scalable/apps/meridian-logo-text-dark.svg
 test -s /usr/share/backgrounds/meridian/meridian-dark.png
 test -s /usr/share/meridian/gtk-4.0/gtk.css
 glib-compile-schemas --strict --dry-run /usr/share/glib-2.0/schemas
+command -v rclone >/dev/null
+test -x /usr/bin/meridian-drive && test -x /usr/bin/meridian-keepawake && test -x /usr/libexec/meridian/flatpak-setup
+python3 -c 'import json; json.load(open("/etc/brave/policies/managed/meridian-privacy.json"))'
 echo "verify: stable pieces OK"
 [ -f /etc/plymouth/plymouthd.conf ] && echo "verify: Meridian boot theme ON" || echo "WARN verify: boot theme OFF (stock)"
 [ -f /etc/dconf/db/gdm.d/20-meridian-ledger ] && echo "verify: sign-in extension ON" || echo "WARN verify: sign-in extension OFF (stock)"

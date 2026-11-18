@@ -12,6 +12,11 @@ modules:
       - source: system
         destination: /
 
+  - type: dnf                    # daily-driver packages (Fedora repos only)
+    install:
+      packages:
+        - rclone                 # Google Drive two-way sync (meridian-drive)
+
   - type: gschema-overrides
     include:
       - zz1-meridian.gschema.override
@@ -22,6 +27,7 @@ modules:
       - 20-plymouth.sh          # boot splash + PIN + Ledger theme, initramfs rebuilt; falls back to stock theme on any error
       - 30-gnome-extension.sh   # Ledger sign-in UI; enabled only if it declares the image's GNOME version
       - 40-user-style.sh        # tighter GTK corners per user, Flatpaks included (read-only)
+      - 50-daily.sh             # daily driver: apps on first login, Drive sync timer, keep-screen-on, Brave policy
       - 90-verify.sh            # build fails loudly if a stable piece is missing; fragile pieces only warn
 
   - type: signing                # signs the image (cosign) and adds our key to the image's container policy

@@ -1,0 +1,60 @@
+#!/usr/bin/bash
+# meridian-drive: offline two-way sync of Google Drive <-> ~/Google Drive (rclone bisync)
+# Usage: meridian-drive {now|open|status|interval <5|15|30|60>|pause|resume|setup|log}
+set -u
+REMOTE="gdrive:"
+LOCAL="$HOME/Google Drive"
+STATE="${XDG_STATE_HOME:-$HOME/.local/state}/meridian-drive"
+LOG="$STATE/sync.log"
+# your own filters win; otherwise the image default (junk only)
+FILTERS="$HOME/.config/rclone/meridian-drive-filters.txt"
+[ -f "$FILTERS" ] || FILTERS=/usr/share/meridian/drive-filters.txt
+DROPIN="$HOME/.config/systemd/user/meridian-drive-sync.timer.d"
+mkdir -p "$STATE" "$LOCAL"
+
+note() { notify-send -a "Google Drive" -i folder-remote "Google Drive" "$1" 2>/dev/null || true; }
+
+run_sync() {
+  exec 9>"$STATE/lock"
+  if ! flock -n 9; then echo "another sync is running, skipping" >&2; return 0; fi
+  local first=()
+  [ -f "$STATE/initialised" ] && [ "$(sha256sum <"$FILTERS")" = "$(cat "$STATE/filters.sum" 2>/dev/null)" ] || first=(--resync --resync-mode newer)
+  (
+    echo "=== $(date -Is) sync start ${first[*]:-}"
+    rclone bisync "$REMOTE" "$LOCAL" "${first[@]}" \
+      --create-empty-src-dirs --compare size,modtime --drive-skip-gdocs \
+      --resilient --recover --max-lock 5m \
+      --conflict-resolve newer --conflict-loser num \
+      --check-access=false --max-delete 50 -v \
+      ${FILTERS:+--filters-file "$FILTERS"}
+    rc=$?
+    echo "=== $(date -Is) sync end rc=$rc"
+    exit $rc
+  ) >>"$LOG" 2>&1
+  rc=$?
+  if [ $rc -eq 0 ]; then
+    touch "$STATE/initialised"; sha256sum <"$FILTERS" >"$STATE/filters.sum"; date -Is > "$STATE/last-ok"
+  else
+    note "Sync failed (code $rc). Run: meridian-drive log"
+  fi
+  return $rc
+}
+
+case "${1:-now}" in
+  now)      [ "${2:-}" = "--quiet" ] || note "Syncing now…"
+            run_sync && { [ "${2:-}" = "--quiet" ] || note "Up to date."; } ;;
+  status)   echo "Last good sync: $(cat "$STATE/last-ok" 2>/dev/null || echo never)"
+            systemctl --user list-timers meridian-drive-sync.timer --no-pager ;;
+  interval) m="${2:?minutes}"; mkdir -p "$DROPIN"
+            printf '[Timer]\nOnUnitActiveSec=\nOnUnitActiveSec=%smin\n' "$m" > "$DROPIN/interval.conf"
+            systemctl --user daemon-reload && systemctl --user restart meridian-drive-sync.timer
+            note "Auto-sync every $m minutes." ;;
+  pause)    systemctl --user stop meridian-drive-sync.timer; note "Auto-sync paused." ;;
+  resume)   systemctl --user start meridian-drive-sync.timer; note "Auto-sync resumed." ;;
+  setup)    rclone listremotes | grep -qx "$REMOTE" || rclone config create gdrive drive scope=drive
+            systemctl --user enable --now meridian-drive-sync.timer
+            "$0" now ;;
+  open)     xdg-open "$LOCAL" ;;
+  log)      tail -n 60 "$LOG" ;;
+  *)        sed -n '2,3p' "$0"; exit 2 ;;
+esac

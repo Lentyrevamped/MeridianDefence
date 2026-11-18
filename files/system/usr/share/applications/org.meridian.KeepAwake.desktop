@@ -1,0 +1,17 @@
+[Desktop Entry]
+Type=Application
+Name=Keep Screen On
+Comment=Toggle keeping the screen on while plugged in
+Icon=video-display
+Exec=meridian-keepawake toggle
+Terminal=false
+Categories=Utility;
+Actions=on;off;
+
+[Desktop Action on]
+Name=Turn on
+Exec=meridian-keepawake on
+
+[Desktop Action off]
+Name=Turn off (normal timeout)
+Exec=meridian-keepawake off

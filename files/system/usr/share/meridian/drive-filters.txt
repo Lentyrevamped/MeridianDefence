@@ -1,0 +1,4 @@
+# Meridian default Google Drive sync filters (rclone filter syntax).
+# Put your own in ~/.config/rclone/meridian-drive-filters.txt; changing it triggers a full resync once.
+- .~lock.*#
+- **/.Trash-*/**

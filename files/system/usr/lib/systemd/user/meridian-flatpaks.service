@@ -1,0 +1,14 @@
+[Unit]
+Description=Meridian OS apps (Flatpak, per user)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/meridian/flatpak-setup
+Restart=on-failure
+RestartSec=5min
+Nice=10
+
+[Install]
+WantedBy=default.target

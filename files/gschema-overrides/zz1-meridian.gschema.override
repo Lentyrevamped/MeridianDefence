@@ -17,3 +17,7 @@ primary-color='#0A0A0C'
 
 [org.gnome.login-screen]
 logo='/usr/share/meridian/gdm-logo.svg'
+
+# Dock (default only; a user's own dock order is kept)
+[org.gnome.shell]
+favorite-apps=['com.google.Chrome.desktop', 'com.brave.Browser.desktop', 'org.meridian.ClaudeWeb.desktop', 'dev.vencord.Vesktop.desktop', 'com.spotify.Client.desktop', 'org.gnome.Nautilus.desktop', 'org.gnome.Ptyxis.desktop', 'org.meridian.DriveSync.desktop', 'io.github.kolunmi.Bazaar.desktop']

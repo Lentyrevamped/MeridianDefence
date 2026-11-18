@@ -1,0 +1,33 @@
+[Desktop Entry]
+Type=Application
+Name=Google Drive Sync
+Comment=Sync ~/Google Drive with Google Drive now
+Icon=folder-remote
+Exec=meridian-drive now
+Terminal=false
+Categories=Utility;
+Actions=open;every5;every15;every60;pause;resume;
+
+[Desktop Action open]
+Name=Open Google Drive folder
+Exec=meridian-drive open
+
+[Desktop Action every5]
+Name=Auto-sync every 5 minutes
+Exec=meridian-drive interval 5
+
+[Desktop Action every15]
+Name=Auto-sync every 15 minutes
+Exec=meridian-drive interval 15
+
+[Desktop Action every60]
+Name=Auto-sync every hour
+Exec=meridian-drive interval 60
+
+[Desktop Action pause]
+Name=Pause auto-sync
+Exec=meridian-drive pause
+
+[Desktop Action resume]
+Name=Resume auto-sync
+Exec=meridian-drive resume

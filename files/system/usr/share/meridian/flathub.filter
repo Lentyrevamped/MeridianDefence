@@ -1,0 +1,6 @@
+# Meridian: only these refs may come from unfiltered Flathub (everything else from flathub-verified)
+allow app/com.google.Chrome/*
+allow app/com.spotify.Client/*
+allow runtime/org.freedesktop.*
+allow runtime/org.gnome.*
+deny *
