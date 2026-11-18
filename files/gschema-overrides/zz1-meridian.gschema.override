@@ -21,3 +21,8 @@ logo='/usr/share/meridian/gdm-logo.svg'
 # Dock (default only; a user's own dock order is kept)
 [org.gnome.shell]
 favorite-apps=['com.google.Chrome.desktop', 'com.brave.Browser.desktop', 'org.meridian.ClaudeWeb.desktop', 'dev.vencord.Vesktop.desktop', 'com.spotify.Client.desktop', 'org.gnome.Nautilus.desktop', 'org.gnome.Ptyxis.desktop', 'org.meridian.DriveSync.desktop', 'io.github.kolunmi.Bazaar.desktop']
+
+# Terminal (Ptyxis): copy/paste on Ctrl+C / Ctrl+V like Windows. Users can change it in Ptyxis > Keyboard Shortcuts.
+[org.gnome.Ptyxis.Shortcuts]
+copy-clipboard='<ctrl>c'
+paste-clipboard='<ctrl>v'

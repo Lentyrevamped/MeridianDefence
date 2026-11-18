@@ -17,6 +17,7 @@ Text contract shown by Plymouth and PAM: `Confirm on your Ledger · code XXXX XX
 | Keep screen on | `/usr/bin/meridian-keepawake` + "Keep Screen On" app (toggle, on, off) | |
 | Apps | `meridian-flatpaks.service` installs `/usr/share/meridian/flatpaks.list` per user on login: Brave, Vesktop, Flatseal, Mission Center, Papers, Loupe, Showtime, Text Editor, Calculator, LibreOffice (verified Flathub), Chrome and Spotify (unfiltered Flathub limited by `flathub.filter`). Skips anything installed, never removes. | |
 | Brave privacy policy | `/etc/brave/policies/managed/meridian-privacy.json` | |
+| Terminal copy/paste on Ctrl+C / Ctrl+V | `org.gnome.Ptyxis.Shortcuts` default | your own shortcuts win |
 | Claude window, dock order | `org.meridian.ClaudeWeb.desktop`, `org.gnome.shell favorite-apps` default | your own dock order wins |
 | Bluetooth | not in the image: `ujust set-bluetooth-modules on` is machine state in /etc and survives rebases | |
 | UGREEN NAS | on hold (no Linux UGREEN client; NAS is remote) | |
