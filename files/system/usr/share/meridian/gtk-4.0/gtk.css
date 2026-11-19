@@ -63,3 +63,7 @@ preferencesgroup > box > label.heading, .heading { font-weight: 600; }
 .navigation-sidebar > row:selected, list.navigation-sidebar > row:selected { background-color: #22303F; box-shadow: inset 2px 0 #4C90F0; }
 /* Focus rings: 1 px blue, square. */
 :focus-visible { outline-color: rgba(76,144,240,.8); outline-width: 1px; outline-offset: -1px; outline-style: solid; }
+
+/* Window controls (close/minimise/maximise): square instead of round. */
+windowcontrols > button, windowcontrols button, windowcontrols > button > image, windowcontrols button > image,
+.titlebutton, headerbar button.titlebutton { border-radius: 2px; }

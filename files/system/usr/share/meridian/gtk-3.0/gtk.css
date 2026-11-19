@@ -9,3 +9,4 @@ headerbar, .titlebar { background: #18212C; border-color: #2A3846; box-shadow: n
 decoration, window.csd, .titlebar, headerbar, .window-frame { border-radius: 0; }
 button, entry, spinbutton, combobox button, .linked > button { border-radius: 2px; }
 menu, .menu, .context-menu, popover, tooltip, .tooltip { border-radius: 0; }
+button.titlebutton, .titlebutton { border-radius: 2px; }
