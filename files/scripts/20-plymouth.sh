@@ -2,9 +2,9 @@
 # Install the Meridian Plymouth theme and rebuild the initramfs. If anything fails, keep the stock theme (fail safe).
 set -uo pipefail
 T=/usr/share/plymouth/themes/meridian
-need="meridian.plymouth meridian.script star.png wordmark.png field.png field-error.png t-enter.png t-pass.png white.png ph.png ph-key.png t-incorrect.png t-incorrect-key.png t-errhint.png t-errhint-key.png"
-# Same background as the login screen (one file in the image, copied so it lands in the initramfs).
-cp /usr/share/backgrounds/meridian/meridian-ground.png "$T/ground.png" || echo "WARN plymouth: no ground image, flat background"
+need="meridian.plymouth meridian.script card-boot-a.png card-boot-b.png card-pin.png card-pin-err.png card-key.png card-key-err.png band-label.png ph.png ph-key.png dot.png caret.png purple.png blue.png track.png"
+# Same background as the login screen (navy wallpaper + corner mark; copied so it lands in the initramfs).
+cp /usr/share/backgrounds/meridian/meridian-dark.png "$T/ground.png" || echo "WARN plymouth: no ground image, flat background"
 ok=1; for n in $need; do [ -s "$T/$n" ] || { echo "WARN missing $T/$n"; ok=0; }; done
 rpm -q plymouth-plugin-script >/dev/null 2>&1 || dnf -y install plymouth-plugin-script || ok=0
 if [ "$ok" = 1 ]; then

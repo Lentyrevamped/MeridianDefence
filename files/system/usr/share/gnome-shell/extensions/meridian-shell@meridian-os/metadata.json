@@ -1,0 +1,8 @@
+{
+  "uuid": "meridian-shell@meridian-os",
+  "name": "Meridian corporate shell",
+  "description": "Meridian OS: purple top bar with the SECURED indicator next to the clock, square navy menus, quick settings, notifications and login/lock cards. Styling only; turning it off gives stock GNOME.",
+  "shell-version": ["51"],
+  "session-modes": ["user", "unlock-dialog", "gdm"],
+  "version": 1
+}

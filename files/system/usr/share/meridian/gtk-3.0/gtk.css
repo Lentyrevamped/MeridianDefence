@@ -1,18 +1,11 @@
-/* Meridian OS: tighter corners for GTK4 / libadwaita apps.
-   Safe by design: GTK ignores selectors and properties it does not know, so after an upstream change the worst
-   case is a stock-looking widget, never a broken app. Remove ~/.config/gtk-4.0/gtk.css to go fully stock. */
-:root { --window-radius: 8px; }
-window.csd, window.csd > .titlebar, window.csd headerbar, .window-frame { border-radius: 8px; }
-window.csd.maximized, window.csd.tiled, window.csd.fullscreen { border-radius: 0; }
-button, menubutton > button, splitbutton > button, dropdown > button, spinbutton, entry, passwordentry,
-searchbar entry, .linked > button, combobox > box > button { border-radius: 4px; }
-button.circular, button.pill { border-radius: 4px; }
-.card, .boxed-list, list.boxed-list, .boxed-list-separate > row, preferencesgroup .boxed-list,
-row.expander list, .osd, toast, banner > revealer > widget { border-radius: 4px; }
-popover > contents, popover.menu > contents, menu, .context-menu { border-radius: 8px; }
-popover.menu modelbutton, popover.menu row { border-radius: 4px; }
-dialog-host > dialog.floating sheet, window.dialog.message, dialog.alert, .dialog-contents { border-radius: 8px; }
-switch, switch > slider { border-radius: 4px; }
-check { border-radius: 3px; }
-scale > trough, scale > trough > highlight, progressbar > trough, progressbar > trough > progress { border-radius: 2px; }
-scale > trough > slider { border-radius: 3px; }
+/* Meridian OS: corporate style for GTK3 apps (Adwaita-dark). Navy surfaces, square panels, blue accent.
+   Unknown selectors are ignored; delete ~/.config/gtk-3.0/gtk.css to go stock. */
+@define-color theme_bg_color #0E141B; @define-color theme_fg_color #E1E7EE;
+@define-color theme_base_color #121A23; @define-color theme_text_color #E1E7EE;
+@define-color theme_selected_bg_color #2F6FD0; @define-color theme_selected_fg_color #ffffff;
+@define-color insensitive_bg_color #141C25; @define-color borders #2A3846; @define-color unfocused_borders #222E3B;
+window, .background { background-color: #0E141B; color: #E1E7EE; }
+headerbar, .titlebar { background: #18212C; border-color: #2A3846; box-shadow: none; }
+decoration, window.csd, .titlebar, headerbar, .window-frame { border-radius: 0; }
+button, entry, spinbutton, combobox button, .linked > button { border-radius: 2px; }
+menu, .menu, .context-menu, popover, tooltip, .tooltip { border-radius: 0; }

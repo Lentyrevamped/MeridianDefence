@@ -3,4 +3,4 @@
 set -euo pipefail
 systemctl --global enable meridian-style.service
 chmod 0755 /usr/share/meridian /usr/share/meridian/gtk-4.0 /usr/share/meridian/gtk-3.0
-chmod 0644 /usr/share/meridian/*.svg /usr/share/meridian/*.png /usr/share/meridian/gtk-*/gtk.css
+chmod 0644 /usr/share/meridian/*.svg /usr/share/meridian/*.css /usr/share/meridian/gtk-*/gtk.css; chmod 0644 /usr/share/meridian/*.png 2>/dev/null || true

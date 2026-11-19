@@ -1,18 +1,65 @@
-/* Meridian OS: tighter corners for GTK4 / libadwaita apps.
-   Safe by design: GTK ignores selectors and properties it does not know, so after an upstream change the worst
-   case is a stock-looking widget, never a broken app. Remove ~/.config/gtk-4.0/gtk.css to go fully stock. */
-:root { --window-radius: 8px; }
-window.csd, window.csd > .titlebar, window.csd headerbar, .window-frame { border-radius: 8px; }
-window.csd.maximized, window.csd.tiled, window.csd.fullscreen { border-radius: 0; }
+/* Meridian OS: corporate style for GTK4 / libadwaita apps (Settings, Files, Text Editor, ...). Navy surfaces, square
+   panels, 2 px controls, blue accent. Tokens: /usr/share/meridian/tokens.css (shared with Meridian Intel).
+   Safe by design: GTK ignores selectors and properties it does not know, so after an upstream change the worst case is
+   a stock-looking widget, never a broken app. Delete ~/.config/gtk-4.0/gtk.css to go fully stock. */
+:root {
+  --window-radius: 0px;
+  --accent-bg-color: #2F6FD0; --accent-fg-color: #ffffff; --accent-color: #6AA6F8;
+  --destructive-bg-color: #C93A3F; --destructive-color: #F07A7E;
+  --success-bg-color: #238551; --success-color: #3FBF7F;
+  --warning-bg-color: #B9802A; --warning-color: #E8A33D;
+  --error-bg-color: #C93A3F; --error-color: #F07A7E;
+  --window-bg-color: #0E141B; --window-fg-color: #E1E7EE;
+  --view-bg-color: #121A23; --view-fg-color: #E1E7EE;
+  --headerbar-bg-color: #18212C; --headerbar-fg-color: #E1E7EE; --headerbar-border-color: #2A3846;
+  --headerbar-backdrop-color: #141C25; --headerbar-shade-color: rgba(0,0,0,.36);
+  --sidebar-bg-color: #141C25; --sidebar-fg-color: #E1E7EE; --sidebar-backdrop-color: #121922;
+  --sidebar-border-color: #2A3846; --sidebar-shade-color: rgba(0,0,0,.25);
+  --secondary-sidebar-bg-color: #121922; --secondary-sidebar-fg-color: #E1E7EE; --secondary-sidebar-backdrop-color: #101820;
+  --secondary-sidebar-border-color: #2A3846; --secondary-sidebar-shade-color: rgba(0,0,0,.25);
+  --card-bg-color: #18212C; --card-fg-color: #E1E7EE; --card-shade-color: rgba(0,0,0,.30);
+  --dialog-bg-color: #18212C; --dialog-fg-color: #E1E7EE;
+  --popover-bg-color: #18212C; --popover-fg-color: #E1E7EE; --popover-shade-color: rgba(0,0,0,.40);
+  --thumbnail-bg-color: #18212C; --thumbnail-fg-color: #E1E7EE;
+  --shade-color: rgba(0,0,0,.36); --scrollbar-outline-color: rgba(0,0,0,.5);
+  --border-color: #2A3846;
+}
+/* Older names (GTK4 apps on libadwaita < 1.6, and apps that read the named colours). */
+@define-color accent_bg_color #2F6FD0; @define-color accent_fg_color #ffffff; @define-color accent_color #6AA6F8;
+@define-color window_bg_color #0E141B; @define-color window_fg_color #E1E7EE;
+@define-color view_bg_color #121A23; @define-color view_fg_color #E1E7EE;
+@define-color headerbar_bg_color #18212C; @define-color headerbar_fg_color #E1E7EE; @define-color headerbar_border_color #2A3846;
+@define-color headerbar_backdrop_color #141C25;
+@define-color sidebar_bg_color #141C25; @define-color sidebar_fg_color #E1E7EE; @define-color sidebar_backdrop_color #121922;
+@define-color card_bg_color #18212C; @define-color card_fg_color #E1E7EE;
+@define-color dialog_bg_color #18212C; @define-color dialog_fg_color #E1E7EE;
+@define-color popover_bg_color #18212C; @define-color popover_fg_color #E1E7EE;
+
+/* Shape: square panels, 2 px controls. */
+window.csd, window.csd > .titlebar, window.csd headerbar, .window-frame, window.csd.maximized, window.csd.tiled,
+window.csd.fullscreen { border-radius: 0; }
 button, menubutton > button, splitbutton > button, dropdown > button, spinbutton, entry, passwordentry,
-searchbar entry, .linked > button, combobox > box > button { border-radius: 4px; }
-button.circular, button.pill { border-radius: 4px; }
-.card, .boxed-list, list.boxed-list, .boxed-list-separate > row, preferencesgroup .boxed-list,
-row.expander list, .osd, toast, banner > revealer > widget { border-radius: 4px; }
-popover > contents, popover.menu > contents, menu, .context-menu { border-radius: 8px; }
-popover.menu modelbutton, popover.menu row { border-radius: 4px; }
-dialog-host > dialog.floating sheet, window.dialog.message, dialog.alert, .dialog-contents { border-radius: 8px; }
-switch, switch > slider { border-radius: 4px; }
-check { border-radius: 3px; }
-scale > trough, scale > trough > highlight, progressbar > trough, progressbar > trough > progress { border-radius: 2px; }
-scale > trough > slider { border-radius: 3px; }
+searchbar entry, .linked > button, combobox > box > button, button.circular, button.pill, button.flat,
+.toggle, togglebutton { border-radius: 2px; }
+.card, .boxed-list, list.boxed-list, .boxed-list-separate > row, preferencesgroup .boxed-list, row.expander list,
+.osd, toast, banner > revealer > widget, .navigation-sidebar > row, .navigation-sidebar row, sidebar row,
+list.navigation-sidebar > row, popover > contents, popover.menu > contents, popover > arrow, menu, .context-menu,
+popover.menu modelbutton, popover.menu row, dialog-host > dialog.floating sheet, window.dialog.message, dialog.alert,
+.dialog-contents, sheet, bottom-sheet > sheet, tabbar tab, tabgrid tabthumbnail, .view frame, frame, .frame,
+image.lowres-icon, avatar, .avatar { border-radius: 0; }
+switch, switch > slider { border-radius: 2px; }
+check { border-radius: 2px; }
+radio { border-radius: 50%; }
+scale > trough, scale > trough > highlight, progressbar > trough, progressbar > trough > progress, levelbar > trough,
+levelbar block { border-radius: 0; }
+scale > trough > slider { border-radius: 2px; }
+
+/* Hairlines and panels like the Meridian cards: 1 px #2A3846 borders, header bars a step lighter. */
+.card, .boxed-list, list.boxed-list { box-shadow: 0 0 0 1px #2A3846; }
+headerbar, .titlebar { box-shadow: inset 0 -1px #2A3846; }
+popover > contents, popover.menu > contents { box-shadow: 0 0 0 1px #2A3846, 0 12px 32px rgba(0,0,0,.35); }
+preferencesgroup > box > label.heading, .heading { font-weight: 600; }
+/* Selected sidebar rows: accent edge instead of a rounded fill. */
+.navigation-sidebar > row:selected, list.navigation-sidebar > row:selected { background-color: #22303F; box-shadow: inset 2px 0 #4C90F0; }
+/* Focus rings: 1 px blue, square. */
+:focus-visible { outline-color: rgba(76,144,240,.8); outline-width: 1px; outline-offset: -1px; outline-style: solid; }

@@ -11,7 +11,8 @@ test -x /usr/bin/meridian-drive && test -x /usr/bin/meridian-keepawake && test -
 python3 -c 'import json; json.load(open("/etc/brave/policies/managed/meridian-privacy.json"))'
 echo "verify: stable pieces OK"
 [ -f /etc/plymouth/plymouthd.conf ] && echo "verify: Meridian boot theme ON" || echo "WARN verify: boot theme OFF (stock)"
-[ -f /etc/dconf/db/gdm.d/20-meridian-ledger ] && echo "verify: sign-in extension ON" || echo "WARN verify: sign-in extension OFF (stock)"
+grep -qs meridian-ledger /etc/dconf/db/gdm.d/20-meridian-ledger && echo "verify: sign-in extension ON" || echo "WARN verify: sign-in extension OFF (stock)"
+grep -qs meridian-shell /etc/dconf/db/local.d/20-meridian-ledger && echo "verify: corporate shell style ON" || echo "WARN verify: corporate shell style OFF (stock)"
 python3 -IsB -c 'import sys; sys.path.insert(0,"/usr/lib/meridian/python"); import meridian_login' \
   && echo "verify: Ledger library imports" || echo "WARN verify: Ledger library does not import"
 grep -qs 'ledger-login-enabled' /etc/pam.d/gdm-password /usr/lib/pam.d/gdm-password && echo "verify: Ledger sign-in hook ON (inactive until enrolled)" \

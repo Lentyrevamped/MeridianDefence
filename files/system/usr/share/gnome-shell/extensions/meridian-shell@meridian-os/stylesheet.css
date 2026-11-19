@@ -1,0 +1,83 @@
+/* Meridian corporate shell. Tokens: /usr/share/meridian/tokens.css. Square panels (0), 2 px controls, 1 px #2A3846 hairlines,
+   navy surfaces, blue accent, purple top bar. Unknown selectors are ignored by St, so a GNOME update can only make a
+   widget look stock again, never break the shell. */
+
+/* ---- top bar ---- */
+#panel, #panel.unlock-screen, #panel.login-screen, #panel.lock-screen { background-color: #4E2A9A; color: #F1ECFF; }
+#panel .panel-button { border-radius: 0; color: #F1ECFF; -natural-hpadding: 10px; }
+#panel .panel-button:hover, #panel .panel-button:active, #panel .panel-button:checked, #panel .panel-button:focus { background-color: rgba(255,255,255,.12); box-shadow: none; }
+#panel .panel-button .clock { font-weight: 600; }
+.meridian-secured { spacing: 6px; padding: 0 7px; height: 18px; margin: 6px 8px 6px 0; border-radius: 2px; background-color: rgba(255,255,255,.14); color: #F1ECFF; font-size: 10.5px; font-weight: 600; letter-spacing: 1.2px; }
+#panel .workspace-dot { border-radius: 3px; }
+
+/* ---- popovers, menus ---- */
+.popup-menu-boxpointer, .candidate-popup-boxpointer { -arrow-border-radius: 0; -arrow-background-color: #18212C; -arrow-border-width: 1px; -arrow-border-color: #2A3846; -arrow-base: 0; -arrow-rise: 0; }
+.popup-menu-content, .candidate-popup-content { background-color: #18212C; border: 1px solid #2A3846; border-radius: 0; box-shadow: 0 12px 32px rgba(0,0,0,.35); color: #E1E7EE; padding: 6px 0; }
+.popup-menu-item { border-radius: 0; margin: 0; padding: 7px 14px; }
+.popup-menu-item:hover, .popup-menu-item:focus, .popup-menu-item:active { background-color: #22303F; color: #E1E7EE; }
+.popup-separator-menu-item .popup-separator-menu-item-separator { background-color: #2A3846; }
+.popup-sub-menu { background-color: #141C25; border-radius: 0; }
+
+/* ---- quick settings ---- */
+.quick-settings { padding: 12px; border-radius: 0; }
+.quick-settings-grid { spacing-rows: 1px; spacing-columns: 1px; }
+.quick-toggle, .quick-menu-toggle .quick-toggle, .quick-menu-toggle .quick-toggle-arrow, .quick-toggle-menu-button { border-radius: 0; background-color: #18212C; color: #E1E7EE; box-shadow: inset 0 0 0 1px #2A3846; }
+.quick-toggle:hover, .quick-menu-toggle .quick-toggle-arrow:hover { background-color: #1D2834; }
+.quick-toggle:checked, .quick-menu-toggle .quick-toggle:checked, .quick-menu-toggle .quick-toggle-arrow:checked { background-color: #22303F; color: #E1E7EE; box-shadow: inset 2px 0 0 #4C90F0, inset 0 0 0 1px #2A3846; }
+.quick-toggle-menu { background-color: #141C25; border-radius: 0; border: 1px solid #2A3846; }
+.quick-slider .slider, .slider { color: #34465A; -barlevel-height: 4px; -barlevel-background-color: #253242; -barlevel-active-background-color: #4C90F0; -slider-handle-radius: 6px; -barlevel-border-radius: 0; }
+.quick-settings-system-item .icon-button, .icon-button, .quick-settings .icon-button { border-radius: 2px; background-color: #1D2834; }
+.quick-settings-system-item .icon-button:hover, .icon-button:hover { background-color: #22303F; }
+.quick-settings .power-item, .quick-settings-system-item .power-item { border-radius: 2px; }
+
+/* ---- calendar / notifications ---- */
+.datemenu-popover, .message-list, .datemenu-calendar-column { border-radius: 0; }
+.message, .notification-banner, .notification, .message-list .message, .events-button, .world-clocks-button, .weather-button, .datemenu-today-button, .message-media-control { border-radius: 0; background-color: #18212C; border: 1px solid #2A3846; box-shadow: none; color: #E1E7EE; }
+.message:hover, .events-button:hover, .world-clocks-button:hover, .weather-button:hover, .datemenu-today-button:hover { background-color: #1D2834; }
+.message .message-title, .notification-banner .message-title { font-weight: 600; }
+.notification-banner { box-shadow: 0 12px 32px rgba(0,0,0,.35); }
+.calendar, .calendar-day, .calendar-day-base, .calendar-month-header .pager-button, .calendar .pager-button { border-radius: 0; }
+.calendar-day:selected, .calendar .calendar-day:selected, .calendar-today:selected { background-color: #2F6FD0; color: #fff; }
+.calendar-today { font-weight: 600; box-shadow: inset 0 -2px 0 #4C90F0; }
+.message-list-clear-button, .dnd-button, .message-list .button { border-radius: 2px; }
+
+/* ---- dialogs, buttons, entries, OSD, switcher ---- */
+.modal-dialog, .end-session-dialog, .prompt-dialog, .polkit-dialog { border-radius: 0; background-color: #18212C; border: 1px solid #2A3846; box-shadow: 0 12px 32px rgba(0,0,0,.4); color: #E1E7EE; }
+.modal-dialog .modal-dialog-content-box { padding: 16px 18px; }
+.modal-dialog-button-box { background-color: #141C25; border-top: 1px solid #2A3846; border-radius: 0; }
+.modal-dialog-button-box .modal-dialog-button, .modal-dialog .modal-dialog-button { border-radius: 2px; background-color: #253242; color: #E1E7EE; }
+.modal-dialog-button-box .modal-dialog-button:default, .modal-dialog-button:default { background-color: #2F6FD0; color: #fff; }
+.modal-dialog-button-box .modal-dialog-button:default:hover { background-color: #3A7BDD; }
+.button, .modal-dialog-button { border-radius: 2px; }
+.button:default, .button.default { background-color: #2F6FD0; color: #fff; }
+StEntry, .search-entry, .prompt-dialog-password-entry, .login-dialog-prompt-entry { border-radius: 2px; background-color: #101820; border: 1px solid #34465A; box-shadow: none; color: #E1E7EE; }
+StEntry:focus, .search-entry:focus, .login-dialog-prompt-entry:focus { border-color: #4C90F0; box-shadow: inset 0 0 0 1px #4C90F0; }
+.osd-window, .resize-popup, .osd-monitor-label { border-radius: 0; background-color: rgba(24,33,44,.96); border: 1px solid #2A3846; color: #E1E7EE; }
+.osd-window .level, .level { -barlevel-height: 4px; -barlevel-background-color: #253242; -barlevel-active-background-color: #4C90F0; -barlevel-border-radius: 0; }
+.switcher-popup .switcher-list, .switcher-list, .workspace-switcher { border-radius: 0; background-color: #18212C; border: 1px solid #2A3846; }
+.switcher-list .item-box { border-radius: 0; }
+.switcher-list .item-box:selected { background-color: #22303F; box-shadow: inset 0 -2px 0 #4C90F0; }
+
+/* ---- overview ---- */
+.dash-background { border-radius: 0; background-color: rgba(24,33,44,.92); border: 1px solid #2A3846; }
+.dash-item-container .overview-tile, .overview-tile, .app-well-app, .show-apps, .grid-search-result, .list-search-result, .search-provider-icon { border-radius: 0; }
+.overview-tile:hover, .app-well-app:hover .overview-icon, .show-apps:hover .overview-icon { background-color: rgba(34,48,63,.9); }
+.workspace-background { border-radius: 0; }
+.search-section-content { border-radius: 0; background-color: #18212C; border: 1px solid #2A3846; }
+.app-folder-dialog { border-radius: 0; background-color: #18212C; border: 1px solid #2A3846; }
+.page-indicator .page-indicator-icon { border-radius: 0; }
+
+/* ---- login + lock screens: the prompt sits on a navy card, like the boot unlock card ---- */
+.login-dialog-prompt-layout { background-color: #18212C; border: 1px solid #2A3846; padding: 18px 18px 20px; box-shadow: 0 12px 32px rgba(0,0,0,.35); border-radius: 0; spacing: 12px; }
+.login-dialog-button, .login-dialog-not-listed-button, .cancel-button, .switch-user-button, .login-dialog-session-list-button { border-radius: 2px; }
+.login-dialog-button.default, .login-dialog .button.default { background-color: #2F6FD0; color: #fff; }
+.login-dialog-user-list, .login-dialog-user-list-view { border-radius: 0; }
+.login-dialog-user-list .login-dialog-user-list-item, .login-dialog-user-list-item { border-radius: 0; background-color: #18212C; border: 1px solid #2A3846; }
+.login-dialog-user-list-item:focus, .login-dialog-user-list-item:hover { background-color: #22303F; box-shadow: inset 2px 0 0 #4C90F0; }
+.user-icon, .user-widget .user-icon, .user-widget-label { border-radius: 0; }
+.login-dialog-message-warning, .login-dialog-message.warning { color: #E8A33D; }
+.login-dialog-message-error, .login-dialog-message.error { color: #F07A7E; }
+.unlock-dialog-clock-time { font-weight: 300; font-feature-settings: "tnum"; }
+.unlock-dialog-clock-date { font-weight: 500; color: #B7C3D0; }
+.unlock-dialog-clock-hint { color: #8B9AAB; font-weight: 500; }
+.unlock-dialog-notifications-container .notification, .unlock-dialog-notifications-container .summary-notification-stack-scrollview { border-radius: 0; background-color: rgba(24,33,44,.92); border: 1px solid #2A3846; }
