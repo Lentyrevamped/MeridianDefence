@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Meridian Intel</title>
+<link rel="icon" href="/static/mark.svg">
+<link rel="stylesheet" href="/static/vendor/maplibre-gl.css">
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand"><img src="/static/mark.svg" alt=""><span class="wm">MERIDIAN</span><span class="sub">INTEL</span></div>
+  <div class="cmd">
+    <svg viewBox="0 0 24 24"><path d="M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Zm5.3-2.2L21 21"/></svg>
+    <input id="cmd" autocomplete="off" spellcheck="false" placeholder="AAPL · BTC-USD · goto Taiwan Strait · fly BAW12 · who Elon Musk · ask what moved oil today?">
+    <kbd>/</kbd>
+    <div id="cmd-hint" class="cmd-hint"></div>
+  </div>
+  <div class="stat">
+    <span id="demo-badge" class="badge" hidden>DEMO DATA</span>
+    <span class="dot" id="st-air" title="Aircraft">AIR</span>
+    <span class="dot" id="st-sea" title="Ships">SEA</span>
+    <span class="dot" id="st-evt" title="Conflict events">EVT</span>
+    <span class="dot" id="st-ai" title="Analyst">AI</span>
+    <span class="clock"><b id="clk-utc">--:--</b><i>UTC</i></span>
+    <span class="clock"><b id="clk-loc">--:--</b><i id="clk-tz">LOCAL</i></span>
+  </div>
+</header>
+
+<nav class="rail">
+  <button data-view="map" class="on" title="Map (1)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.2 3 14.8 0 18M12 3c-3 3.2-3 14.8 0 18"/></svg><span>Map</span></button>
+  <button data-view="markets" title="Markets (2)"><svg viewBox="0 0 24 24"><path d="M3 17l5-5 4 3 8-8"/><path d="M15 7h5v5"/></svg><span>Markets</span></button>
+  <button data-view="analyst" title="Analyst (3)"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M18 15l.9 2.1L21 18l-2.1.9L18 21l-.9-2.1L15 18l2.1-.9z"/></svg><span>Analyst</span></button>
+  <button data-view="osint" title="OSINT (4)"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 21c.6-4 3.4-6 7-6s6.4 2 7 6"/><circle cx="18" cy="14" r="2.6"/><path d="M20 16l2 2"/></svg><span>OSINT</span></button>
+  <div class="grow"></div>
+  <button data-view="settings" title="Keys and status"><svg viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M14 9l2 2"/></svg><span>Keys</span></button>
+</nav>
+
+<main>
+  <!-- MAP -->
+  <section id="v-map" class="view on">
+    <div id="map"></div>
+    <div class="panel tl">
+      <div class="seg" id="basemaps">
+        <button data-b="dark" class="on">Dark</button><button data-b="sat">Satellite</button><button data-b="s2">Sentinel-2</button>
+        <button data-b="today">Today</button><button data-b="terrain">Terrain</button><button data-b="outline">Offline</button>
+      </div>
+      <div class="layers">
+        <label><input type="checkbox" id="ly-air" checked><span>Aircraft</span><em id="n-air">0</em></label>
+        <label><input type="checkbox" id="ly-mil"><span>Military only</span></label>
+        <label><input type="checkbox" id="ly-sea" checked><span>Ships</span><em id="n-sea">0</em></label>
+        <label><input type="checkbox" id="ly-evt" checked><span>Conflict &amp; unrest</span><em id="n-evt">0</em></label>
+        <label><input type="checkbox" id="ly-lbl" checked><span>Labels &amp; borders</span></label>
+        <label><input type="checkbox" id="ly-mono"><span>Mono imagery</span></label>
+        <label><input type="checkbox" id="ly-3d"><span>3D terrain</span></label>
+      </div>
+      <div class="legend">
+        <span><i class="lg ring"></i>protest</span><span><i class="lg half"></i>coercion · assault</span>
+        <span><i class="lg solid"></i>fighting</span><span><i class="lg pulse"></i>mass violence</span>
+      </div>
+    </div>
+    <aside class="panel tr" id="drawer">
+      <div class="dhead"><span id="d-title">Conflict feed</span><button id="d-back" hidden>Back</button></div>
+      <div id="d-body" class="dbody"></div>
+    </aside>
+    <div class="coords" id="coords"></div>
+    <div class="attrib" id="attrib"></div>
+  </section>
+
+  <!-- MARKETS -->
+  <section id="v-markets" class="view">
+    <div class="mk">
+      <div class="mk-list">
+        <div class="mk-search"><input id="mk-q" placeholder="Search or add symbol: Rheinmetall, natural gas, SOL-USD"><div id="mk-results" class="dropdown"></div></div>
+        <table class="wl"><tbody id="wl"></tbody></table>
+      </div>
+      <div class="mk-main">
+        <div class="qhead">
+          <div><div class="qsym" id="q-sym">—</div><div class="qname" id="q-name"></div></div>
+          <div class="qpx"><span id="q-px">—</span><span id="q-chg"></span><small id="q-src"></small></div>
+        </div>
+        <div class="seg" id="ranges"><button>1D</button><button>5D</button><button>1M</button><button>6M</button><button class="on">1Y</button><button>5Y</button><button>MAX</button>
+          <span class="sp"></span><button id="ct-line" class="on">Line</button><button id="ct-candle">Candles</button><button id="q-add">+ Watchlist</button><button id="q-ask">Ask analyst</button></div>
+        <div id="chart"></div>
+        <div class="qstats" id="q-stats"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ANALYST -->
+  <section id="v-analyst" class="view">
+    <div class="an">
+      <div class="chat">
+        <div id="chat-log" class="chat-log"></div>
+        <form id="chat-form" class="chat-form"><textarea id="chat-in" rows="2" placeholder="Ask anything: “Which tankers are near Hormuz?”, “Summarise fighting in Sudan this hour”, “Watch gold and the Fed”"></textarea><button>Ask</button></form>
+      </div>
+      <div class="watches">
+        <h3>Watches <small>re-checked hourly, digested by the analyst</small></h3>
+        <form id="w-form" class="w-form">
+          <input name="topic" placeholder="Topic, e.g. Red Sea shipping" required>
+          <input name="query" placeholder="News query (optional)">
+          <input name="symbols" placeholder="Symbols, e.g. CL=F,ZIM (optional)">
+          <textarea name="instructions" rows="2" placeholder="What to track or alert on (optional)"></textarea>
+          <button>Add watch</button>
+        </form>
+        <div id="w-list"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- OSINT -->
+  <section id="v-osint" class="view">
+    <div class="os">
+      <div class="os-cases">
+        <div class="scope" id="scope">
+          <b>Scope</b>
+          <p>Public figures and companies: full public profile, official accounts, news, filings.</p>
+          <p>Private individuals: username discovery, breach exposure for an email you have, news mentions, and licensed PI providers. No home addresses or personal phone numbers; those come from the licensed providers, who check licence and purpose.</p>
+          <p>Every lookup is tied to a case and written to a tamper-evident audit log.</p>
+          <button id="scope-ok">Got it</button>
+        </div>
+        <h3>Cases <button id="c-new-btn" class="mini">New case</button></h3>
+        <form id="c-form" class="c-form" hidden>
+          <input name="title" placeholder="Case title" required>
+          <input name="client" placeholder="Client (optional)">
+          <select name="basis" id="c-basis"></select>
+          <textarea name="purpose" rows="3" placeholder="Purpose of the investigation (required, goes in the audit log)" required></textarea>
+          <button>Open case</button>
+        </form>
+        <div id="c-list"></div>
+      </div>
+      <div class="os-main" id="os-main"><div class="empty">Open or create a case to start.</div></div>
+    </div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section id="v-settings" class="view">
+    <div class="st">
+      <h2>Keys and feeds</h2>
+      <p class="muted">Keys live in GNOME Keyring. Set one in a terminal with <code>meridian-intel keys set NAME</code> (input hidden), then reload.</p>
+      <table class="kt"><tbody id="keys"></tbody></table>
+      <h2>Sources</h2>
+      <table class="kt"><tbody>
+        <tr><td>Aircraft</td><td>adsb.lol (regional), OpenSky (wide views)</td><td>free</td></tr>
+        <tr><td>Ships</td><td>aisstream.io websocket</td><td>free key</td></tr>
+        <tr><td>Conflict</td><td>GDELT 2.0 events, last hour, machine-coded</td><td>free</td></tr>
+        <tr><td>News</td><td>GDELT DOC 2.0</td><td>free</td></tr>
+        <tr><td>Markets</td><td>Yahoo chart API, CoinGecko, ECB (Frankfurter), Stooq</td><td>free</td></tr>
+        <tr><td>Imagery</td><td>CARTO, Esri World Imagery, EOX Sentinel-2 cloudless, NASA GIBS, AWS Terrain</td><td>free</td></tr>
+        <tr><td>Analyst</td><td>Claude API, claude-opus-5-5</td><td>paid key</td></tr>
+        <tr><td>OSINT</td><td>Wikidata, Wikipedia, GDELT, SEC EDGAR, built-in username sweep, HIBP</td><td>HIBP paid</td></tr>
+      </tbody></table>
+    </div>
+  </section>
+</main>
+
+<footer class="ticker"><div class="tk-track" id="ticker"></div></footer>
+<div id="toast" class="toast" hidden></div>
+
+<script src="/static/vendor/maplibre-gl-csp.js"></script>
+<script src="/static/vendor/lightweight-charts.standalone.production.js"></script>
+<script type="module" src="/static/app.js"></script>
+</body>
+</html>
