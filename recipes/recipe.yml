@@ -2,7 +2,7 @@
 # Meridian OS: secureblue (hardened Fedora Atomic, GNOME, open NVIDIA) + Meridian branding and Ledger sign-in.
 # Rule: only customise through stable hooks. Every Meridian piece must fail back to stock secureblue, never break boot or login.
 name: meridian-os
-description: Meridian OS, a branded secureblue for meridian2. Secured by Meridian.
+description: Meridian OS, a branded secureblue for meridian2.
 base-image: ghcr.io/secureblue/silverblue-nvidia-open-hardened
 image-version: latest
 

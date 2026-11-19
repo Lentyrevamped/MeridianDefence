@@ -9,7 +9,7 @@ sed -i -E \
   -e "s|^LOGO=.*|LOGO=meridian-logo|" \
   -e "s|^DEFAULT_HOSTNAME=.*|DEFAULT_HOSTNAME=\"meridian\"|" "$f"
 grep -q '^LOGO=' "$f" || echo 'LOGO=meridian-logo' >> "$f"
-grep -q '^VARIANT=' "$f" && sed -i 's|^VARIANT=.*|VARIANT="Secured by Meridian"|' "$f" || echo 'VARIANT="Secured by Meridian"' >> "$f"
+sed -i "/^VARIANT=/d" "$f"   # no tagline anywhere (Dongwon 19 Nov)
 echo "MERIDIAN_IMAGE_BUILT=\"$(date -u +%Y-%m-%dT%H:%MZ)\"" >> "$f"
 gtk-update-icon-cache -f /usr/share/icons/hicolor 2>/dev/null || true
 cat "$f"
