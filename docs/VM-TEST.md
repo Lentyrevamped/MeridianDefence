@@ -34,3 +34,17 @@ If libvirt/qemu/swtpm (e.g. what the ARTEX VM uses) are not available without la
 ## Report
 Pass/fail per item, screenshots of 1, 2 and the GDM login, `rpm-ostree status`, and journal errors for anything that fails
 (`journalctl -b -u 'plymouth*'`, `journalctl --user -u meridian-flatpaks`, `journalctl -b -t meridian-ledger-login`, `ausearch -m avc -ts boot`).
+
+## Re-test after 43fb1d2 (only the parts that changed)
+Rebase the existing VM (`rpm-ostree upgrade`, reboot). The signature policy scope is now lowercase; if `rpm-ostree upgrade`
+refuses the signature, run once `rpm-ostree rebase ostree-image-signed:docker://ghcr.io/lentyrevamped/meridian-os:latest`.
+- R1 Boot: wrong PIN, wait for the re-prompt: title "Incorrect PIN" + red field + hint; right PIN unlocks.
+- R2 Recovery prompt (TPM slot wiped, snapshot): placeholder "Recovery key"; a wrong key shows "Incorrect recovery key".
+- R3 Dock order: Chrome, Brave, Claude, Vesktop, Spotify, Files, Ptyxis, Drive sync, Bazaar (check with a NEW user, or
+  `dconf reset /org/gnome/shell/favorite-apps` first, since a user who already changed the dock keeps their own).
+- R4 Dummy enrolment as in check 6, then Super+L: NO password field, "Connect your Ledger and open the Meridian app", then
+  after ~60 s the error "No Ledger with the Meridian app found" (not GNOME's generic text); it retries by itself.
+  Same at GDM after logout (not run last time). Ctrl+Alt+F3 password + `run0 meridian-ledger disable` still restore it,
+  and afterwards the lock screen shows the password field again.
+- R5 `cat /etc/containers/policy.json | grep -i lentyrevamped` shows only lowercase; Keep Screen On toggles leave no stacked notifications.
+- R6 `journalctl -b --user -g meridian` (or `journalctl -b -g '\[meridian\]'`) shows no extension errors.
