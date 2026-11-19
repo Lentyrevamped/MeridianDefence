@@ -3,7 +3,7 @@
 # Otherwise it stays installed but off: GDM, the lock screen and the desktop fall back to stock GNOME. The Ledger
 # step still works there as plain text (it is driven by PAM, not by the extension).
 #   meridian-ledger : Ledger card on the login and lock screens
-#   meridian-shell  : corporate styling (purple top bar + SECURED, square navy menus, login/lock cards)
+#   meridian-shell  : Graphite shell (floating left taskbar, start menu, Windows-style quick settings, bottom bar at sign-in)
 set -uo pipefail
 shell=$(rpm -q --qf '%{VERSION}' gnome-shell | cut -d. -f1)
 on=()
