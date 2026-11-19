@@ -38,7 +38,7 @@ Pass/fail per item, screenshots of 1, 2 and the GDM login, `rpm-ostree status`, 
 ## Re-test after 43fb1d2 (only the parts that changed)
 Rebase the existing VM (`rpm-ostree upgrade`, reboot). The signature policy scope is now lowercase; if `rpm-ostree upgrade`
 refuses the signature, run once `rpm-ostree rebase ostree-image-signed:docker://ghcr.io/lentyrevamped/meridian-os:latest`.
-- R1 Boot: wrong PIN, wait for the re-prompt: title "Incorrect PIN" + red field + hint; right PIN unlocks.
+- R1 Boot: wrong PIN, wait for the re-prompt: title "Incorrect PIN" + bright (white) field border + hint; the design is mono, no red; right PIN unlocks.
 - R2 Recovery prompt (TPM slot wiped, snapshot): placeholder "Recovery key"; a wrong key shows "Incorrect recovery key".
 - R3 Dock order: Chrome, Brave, Claude, Vesktop, Spotify, Files, Ptyxis, Drive sync, Bazaar (check with a NEW user, or
   `dconf reset /org/gnome/shell/favorite-apps` first, since a user who already changed the dock keeps their own).
@@ -48,3 +48,10 @@ refuses the signature, run once `rpm-ostree rebase ostree-image-signed:docker://
   and afterwards the lock screen shows the password field again.
 - R5 `cat /etc/containers/policy.json | grep -i lentyrevamped` shows only lowercase; Keep Screen On toggles leave no stacked notifications.
 - R6 `journalctl -b --user -g meridian` (or `journalctl -b -g '\[meridian\]'`) shows no extension errors.
+
+## Re-test after the next commit (fixes from the 43fb1d2 re-test)
+- Q1 `journalctl -b -g '\[meridian\]'` after a lock/unlock with the dummy enrolment: no errors. The Ledger code card is
+  built (only visible with a real Ledger, check 7).
+- Q2 Toggle Keep Screen On 4 times, lock: at most one "Keep screen on" notification.
+- Q3 Dummy enrolment, log out, F3 + `run0 meridian-ledger disable`, back to GDM: password field with no Ledger hint under it.
+- Q4 Wrong PIN: error field border clearly brighter than the normal one.

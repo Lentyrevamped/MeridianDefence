@@ -40,7 +40,7 @@ const safe = (fn, fallback) => (...a) => { try { return fn(...a); } catch (e) { 
 
 class LedgerCard {
     constructor(dir) {
-        this.actor = new St.BoxLayout({vertical: true, style_class: 'meridian-card', x_align: Clutter.ActorAlign.CENTER, visible: false});
+        this.actor = new St.BoxLayout({orientation: Clutter.Orientation.VERTICAL, style_class: 'meridian-card', x_align: Clutter.ActorAlign.CENTER, visible: false});
         this._hint = new St.Label({style_class: 'meridian-hint', text: 'Confirm on your Ledger', x_align: Clutter.ActorAlign.CENTER});
         this._chip = new St.BoxLayout({style_class: 'meridian-chip', x_align: Clutter.ActorAlign.CENTER});
         this._g = [0, 1, 2].map(() => new St.Label({style_class: 'meridian-group'}));
@@ -97,7 +97,10 @@ export default class MeridianLedger extends Extension {
         // A real PAM question (Ledger not enrolled after all): show the entry and drop the card.
         this._inj.overrideMethod(AuthPrompt.AuthPrompt.prototype, 'setQuestion', orig => function (...a) {
             safe(() => { this._meridianLedger = false; this._meridianCard?.hide(); if (this._message) this._message.opacity = 255; })();
-            return orig.apply(this, a);
+            const ret = orig.apply(this, a);
+            // A Ledger hint left over from an earlier attempt must not sit under a password field.
+            safe(() => { const t = this._message?.text ?? ''; if (t && (isProgress(t) || isFailure(t))) this.setMessage(null); })();
+            return ret;
         });
         // Ledger users: no password field. begin() knows the user (unlock: always the session user).
         this._inj.overrideMethod(AuthPrompt.AuthPrompt.prototype, 'begin', orig => function (params) {
