@@ -3,7 +3,12 @@
 // Contract with PAM (plain text, so stock GNOME shows it readably when this extension is off):
 //   info  "Confirm on your Ledger · code 3387 45BE 5C20" -> card with the 12-hex code (as the Ledger shows it), spinner
 //   info  "Approved on Ledger"                         -> approved state
-//   error "Rejected on Ledger"                         -> rejected state
+//   info  "Rejected on Ledger"                         -> rejected state
+//   info  "Connect your Ledger and open the Meridian app" -> plain text (waiting for the device)
+//   info  any other line containing "Ledger"           -> a failure: shown as an error instead of GDM's generic
+//                                                         "Sorry, password authentication didn't work"
+// Users with /etc/meridian/ledger/<user>.json sign in with the Ledger only, so the password field is not shown
+// (it comes back if PAM ever asks a question). Without this extension the password field is visible but refused.
 // Every hook is wrapped: on any error we log once and fall back to the stock text.
 import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
@@ -11,9 +16,24 @@ import St from 'gi://St';
 import Clutter from 'gi://Clutter';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as AuthPrompt from 'resource:///org/gnome/shell/gdm/authPrompt.js';
+import * as UserVerifier from 'resource:///org/gnome/shell/gdm/userVerifier.js';
 import {Extension, InjectionManager} from 'resource:///org/gnome/shell/extensions/extension.js';
 
 const CODE_RE = /Confirm on your Ledger.*?code\s+([0-9A-F]{4})\s?([0-9A-F]{4})\s?([0-9A-F]{4})/;
+const USER_RE = /^[a-z_][a-z0-9_-]{0,31}$/;
+const enrolled = u => !!u && USER_RE.test(u) && GLib.file_test(`/etc/meridian/ledger/${u}.json`, GLib.FileTest.IS_REGULAR);
+const isProgress = m => CODE_RE.test(m) || m.startsWith('Approved on Ledger') || m.startsWith('Connect your Ledger');
+const isFailure = m => m.includes('Ledger') && !isProgress(m);
+// Message queue filter (per ShellUserVerifier): a Ledger failure line becomes an ERROR so it survives GDM's
+// failure handling, and the generic ERROR that follows it is dropped. Returns the args to queue, or null to drop.
+function filterMessage(v, args) {
+    const msg = args?.message ?? '', ERROR = UserVerifier.MessageType.ERROR;
+    if (!msg) return args;
+    if (isFailure(msg)) { v._meridianFailed = true; return {...args, messageType: Math.max(args.messageType ?? 0, ERROR)}; }
+    if (isProgress(msg)) { v._meridianFailed = false; return args; }
+    if (v._meridianFailed && args.messageType === ERROR) { v._meridianFailed = false; return null; }
+    return args;
+}
 const EASE_OUT = Clutter.AnimationMode.EASE_OUT_CUBIC;
 let warned = false;
 const safe = (fn, fallback) => (...a) => { try { return fn(...a); } catch (e) { if (!warned) { warned = true; console.warn(`[meridian] ${e}\n${e.stack}`); } return fallback?.(...a); } };
@@ -74,11 +94,30 @@ export default class MeridianLedger extends Extension {
             })();
             return r;
         });
-        // Password prompt (fallback) replaces the card.
+        // A real PAM question (Ledger not enrolled after all): show the entry and drop the card.
         this._inj.overrideMethod(AuthPrompt.AuthPrompt.prototype, 'setQuestion', orig => function (...a) {
-            safe(() => { this._meridianCard?.hide(); if (this._message) this._message.opacity = 255; })();
+            safe(() => { this._meridianLedger = false; this._meridianCard?.hide(); if (this._message) this._message.opacity = 255; })();
             return orig.apply(this, a);
         });
+        // Ledger users: no password field. begin() knows the user (unlock: always the session user).
+        this._inj.overrideMethod(AuthPrompt.AuthPrompt.prototype, 'begin', orig => function (params) {
+            safe(() => {
+                const user = params?.userName ?? (this._mode === AuthPrompt.AuthPromptMode.UNLOCK_ONLY ? GLib.get_user_name() : null);
+                this._meridianLedger = enrolled(user);
+                if (this._meridianLedger) this._entryArea?.hide();
+            })();
+            return orig.call(this, params);
+        });
+        this._inj.overrideMethod(AuthPrompt.AuthPrompt.prototype, '_fadeInElement', orig => function (element) {
+            if (this._meridianLedger && element === this._entryArea) return undefined;
+            return orig.call(this, element);
+        });
+        for (const name of ['_queueMessage', '_queuePriorityMessage']) {
+            this._inj.overrideMethod(UserVerifier.ShellUserVerifier.prototype, name, orig => function (args) {
+                const a = safe(() => filterMessage(this, args), () => args)();
+                return a ? orig.call(this, a) : undefined;
+            });
+        }
         if (Main.sessionMode.isGreeter) safe(() => this._handoff())();
     }
 

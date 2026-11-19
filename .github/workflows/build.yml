@@ -38,5 +38,6 @@ jobs:
           recipe: recipe.yml
           cosign_private_key: ${{ env.MERIDIAN_COSIGN_KEY }}
           registry_token: ${{ github.token }}
+          registry_namespace: lentyrevamped   # lowercase: signature policy scope + registries.d name must match the pulled ref
           pr_event_number: ${{ github.event.number }}
           maximize_build_space: true

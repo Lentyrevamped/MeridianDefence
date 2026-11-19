@@ -2,7 +2,7 @@
 # Install the Meridian Plymouth theme and rebuild the initramfs. If anything fails, keep the stock theme (fail safe).
 set -uo pipefail
 T=/usr/share/plymouth/themes/meridian
-need="meridian.plymouth meridian.script star.png wordmark.png field.png field-error.png t-enter.png t-pass.png white.png"
+need="meridian.plymouth meridian.script star.png wordmark.png field.png field-error.png t-enter.png t-pass.png white.png ph.png ph-key.png t-incorrect.png t-incorrect-key.png t-errhint.png t-errhint-key.png"
 ok=1; for n in $need; do [ -s "$T/$n" ] || { echo "WARN missing $T/$n"; ok=0; }; done
 rpm -q plymouth-plugin-script >/dev/null 2>&1 || dnf -y install plymouth-plugin-script || ok=0
 if [ "$ok" = 1 ]; then

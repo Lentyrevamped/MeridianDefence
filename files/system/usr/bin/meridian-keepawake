@@ -2,7 +2,7 @@
 # meridian-keepawake: toggle "keep screen on" (no dimming, blanking or sleep on AC)
 # Usage: meridian-keepawake [toggle|on|off|status]
 S="${XDG_STATE_HOME:-$HOME/.local/state}/meridian-keepawake"; mkdir -p "$S"
-note() { notify-send -a "Keep screen on" -i video-display "Keep screen on" "$1" 2>/dev/null || true; }
+note() { notify-send -a "Keep screen on" -i video-display -e "Keep screen on" "$1" 2>/dev/null || true; }  # -e transient: no pile-up on the lock screen
 on() {
   [ -f "$S/saved" ] || {
     echo "idle=$(gsettings get org.gnome.desktop.session idle-delay | awk '{print $NF}')" > "$S/saved"

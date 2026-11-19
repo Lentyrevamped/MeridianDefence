@@ -22,6 +22,7 @@ fun mix(a, b, k) { return a + (b - a) * k; }
 star_src = Image("star.png");                      # master, scaled per frame
 word_img = ld("wordmark"); sign_img = ld("signoff"); white = Image("white.png");
 t_enter = ld("t-enter"); t_pass = ld("t-pass"); t_bad = ld("t-incorrect"); t_sub = ld("t-sub"); t_hint = ld("t-errhint");
+t_bad_key = ld("t-incorrect-key"); t_hint_key = ld("t-errhint-key"); ph_key = ld("ph-key");
 f_img = ld("field"); f_err = ld("field-error"); ph_img = ld("ph"); sub_off = ld("submit-off"); sub_on = ld("submit-on");
 dot_img = ld("dot"); caret_img = ld("caret");
 
@@ -35,7 +36,7 @@ ndots = 0;
 
 # ---- state ----
 mode = "intro"; tm = 0; t_mode = 0;              # tm = seconds since start, t_mode = seconds in mode
-bullets = 0; submitted = 0; err = 0; t_err = -10; passmode = 0;
+bullets = 0; submitted = 0; err = 0; t_err = -10; passmode = 0; last_prompt = "";
 progress = 0; quitting = 0; pin_seen = 0;
 
 fun set_mode(m) { global.mode = m; global.t_mode = 0; }
@@ -43,9 +44,14 @@ fun set_mode(m) { global.mode = m; global.t_mode = 0; }
 # ---- callbacks ----
 fun password_cb(prompt, b) {
   if (mode != "pin") {
-    if (submitted && mode == "wait") { global.err = 1; global.t_err = tm; }
+    # Asked again with the same prompt after an answer = that answer was wrong. The TPM check can take longer than the
+    # "wait" animation, so this must not depend on the mode we are in. A different prompt (recovery key after TPM failure)
+    # is a new question, not an error.
+    if (submitted && prompt == last_prompt) { global.err = 1; global.t_err = tm; } else global.err = 0;
+    global.submitted = 0;
     set_mode("pin");
   }
+  global.last_prompt = prompt;
   global.pin_seen = 1;
   # recovery-key prompt does not mention a PIN
   global.passmode = 1; pj = 0; while (prompt.CharAt(pj + 2) != "") { if (prompt.CharAt(pj) == "P" && prompt.CharAt(pj + 1) == "I" && prompt.CharAt(pj + 2) == "N") global.passmode = 0; pj++; }
@@ -102,7 +108,7 @@ fun refresh() {
   # ---- PIN ----
   if (pin_op > 0.01) {
     dy = (1 - pin_op) * -8 * S; o = pin_op;
-    if (err) ti = t_bad; else if (passmode) ti = t_pass; else ti = t_enter;
+    if (err && passmode) ti = t_bad_key; else if (err) ti = t_bad; else if (passmode) ti = t_pass; else ti = t_enter;
     show(title, ti, CX, Y(688) + dy, o); show(sub, t_sub, CX, Y(721) + dy, o);
     # shake: 10 px, 3.5 cycles, quadratic decay over 450 ms
     tau = (tm - t_err) / 0.45; sx = 0;
@@ -119,10 +125,12 @@ fun refresh() {
     blink = Math.Int(tm * 1.9) % 2 == 0;
     if (nb > 0) cxp = left + nb * 22.5 * S + 2 * S; else cxp = left;
     caret.SetX(Math.Int(cxp)); caret.SetY(Math.Int(fy - caret_img.GetHeight() / 2)); if (blink) caret.SetOpacity(o); else caret.SetOpacity(0);
-    if (nb == 0) { ph.SetX(Math.Int(left + 4 * S)); ph.SetY(Math.Int(fy - ph_img.GetHeight() / 2)); ph.SetOpacity(o); } else ph.SetOpacity(0);
+    if (passmode) ph_cur = ph_key; else ph_cur = ph_img;
+    if (nb == 0) { ph.SetImage(ph_cur); ph.SetX(Math.Int(left + 4 * S)); ph.SetY(Math.Int(fy - ph_cur.GetHeight() / 2)); ph.SetOpacity(o); } else ph.SetOpacity(0);
     if (nb > 0) si = sub_on; else si = sub_off;
     show(submit, si, fx + fi.GetWidth() / 2 - 5 * S - 1.25 * S - 7.5 * S - si.GetWidth() / 2, fy, o);
-    if (err) show(hint, t_hint, CX, Y(856) + dy, o * clamp01((tm - t_err) / 0.25)); else hide(hint);
+    if (passmode) hint_cur = t_hint_key; else hint_cur = t_hint;
+    if (err) show(hint, hint_cur, CX, Y(856) + dy, o * clamp01((tm - t_err) / 0.25)); else hide(hint);
   } else { hide(title); hide(sub); hide(field); hide(ph); hide(submit); hide(caret); hide(hint); for (i = 0; i < ndots; i++) dots[i].SetOpacity(0); }
 
   # ---- splash: wordmark + progress ----

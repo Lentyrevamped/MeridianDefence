@@ -20,7 +20,7 @@ modules:
 
   - type: gschema-overrides
     include:
-      - zz1-meridian.gschema.override
+      - zz2-meridian.gschema.override  # zz2: must sort after secureblue's zz1-secureblue override (dock order)
 
   - type: script
     scripts:
