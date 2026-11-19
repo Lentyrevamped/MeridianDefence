@@ -114,7 +114,7 @@ fun refresh() {
   if (pin_op > 0.01) {
     dy = (1 - pin_op) * -8 * S; o = pin_op;
     if (err && passmode) ti = t_bad_key; else if (err) ti = t_bad; else if (passmode) ti = t_pass; else ti = t_enter;
-    show(title, ti, CX, Y(688) + dy, o); show(sub, t_sub, CX, Y(721) + dy, o);
+    show(title, ti, CX, Y(728) + dy, o); hide(sub);
     # shake: 10 px, 3.5 cycles, quadratic decay over 450 ms
     tau = (tm - t_err) / 0.45; sx = 0;
     if (tau > 0 && tau < 1) sx = 12.5 * S * Math.Sin(2 * Math.Pi * 3.5 * tau) * (1 - tau) * (1 - tau);
