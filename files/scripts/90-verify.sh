@@ -14,9 +14,9 @@ echo "verify: stable pieces OK"
 [ -f /etc/dconf/db/gdm.d/20-meridian-ledger ] && echo "verify: sign-in extension ON" || echo "WARN verify: sign-in extension OFF (stock)"
 python3 -IsB -c 'import sys; sys.path.insert(0,"/usr/lib/meridian/python"); import meridian_login' \
   && echo "verify: Ledger library imports" || echo "WARN verify: Ledger library does not import"
-grep -q 'ledger-login-enabled' /etc/pam.d/gdm-password && echo "verify: Ledger sign-in hook ON (inactive until enrolled)" \
+grep -qs 'ledger-login-enabled' /etc/pam.d/gdm-password /usr/lib/pam.d/gdm-password && echo "verify: Ledger sign-in hook ON (inactive until enrolled)" \
   || echo "WARN verify: Ledger sign-in hook OFF (stock password sign-in)"
-if grep -qs meridian /etc/pam.d/login /etc/pam.d/sudo /etc/pam.d/polkit-1 /etc/pam.d/run0 /etc/pam.d/system-auth /etc/pam.d/password-auth; then
+if grep -qs meridian /{etc,usr/lib}/pam.d/{login,sudo,polkit-1,run0,system-auth,password-auth}; then
   echo "verify: FAIL, a rescue PAM stack was changed"; exit 1
 fi
 echo "verify: text console, sudo/run0, polkit untouched (password rescue)"

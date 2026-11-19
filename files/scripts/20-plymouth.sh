@@ -17,8 +17,11 @@ fi
 KVER=$(ls /usr/lib/modules | sort -V | tail -1)
 if dracut --no-hostonly --kver "$KVER" --reproducible --zstd --add ostree -f "/tmp/initramfs-$KVER.img"; then
   mv "/tmp/initramfs-$KVER.img" "/usr/lib/modules/$KVER/initramfs.img"; chmod 0600 "/usr/lib/modules/$KVER/initramfs.img"
-  lsinitrd "/usr/lib/modules/$KVER/initramfs.img" | grep -q "plymouth/themes/meridian/meridian.script" \
-    && echo "initramfs: theme included" || echo "WARN initramfs: theme not found inside (stock splash will show)"
+  # Listing goes to a file first: "lsinitrd | grep -q" + pipefail reports a false miss when grep exits early (SIGPIPE).
+  lsinitrd "/usr/lib/modules/$KVER/initramfs.img" > /tmp/lsinitrd.txt 2>/dev/null || true
+  if grep -q "plymouth/themes/meridian/meridian.script" /tmp/lsinitrd.txt; then echo "initramfs: theme included"
+  else echo "WARN initramfs: theme not found inside (stock splash will show)"; grep -E "plymouth" /tmp/lsinitrd.txt | head -20; fi
+  rm -f /tmp/lsinitrd.txt
 else
   echo "WARN dracut failed, keeping upstream initramfs (stock splash)"; rm -f /etc/plymouth/plymouthd.conf
 fi

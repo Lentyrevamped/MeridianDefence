@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
-# Ledger-only sign-in at GDM and the lock screen (both use /etc/pam.d/gdm-password).
+# Ledger-only sign-in at GDM and the lock screen (both use the gdm-password PAM service).
 # Off until a user is enrolled (/etc/meridian/ledger/<user>.json, root-owned): the gate below skips straight to
 # the stock password stack for everyone else. Text consoles (login), sudo/run0 and polkit are NOT touched, so the
 # password always works at Ctrl+Alt+F3. On any error this leaves gdm-password stock and only warns.
 set -uo pipefail
+# Fedora 45 ships PAM configs in /usr/lib/pam.d (vendor dir); /etc/pam.d wins when present. Patch whichever is live.
 F=/etc/pam.d/gdm-password
+[ -f "$F" ] || F=/usr/lib/pam.d/gdm-password
 MARK="# Meridian: Ledger-only sign-in"
 GATE="auth       [success=ignore default=1] pam_exec.so quiet /usr/libexec/meridian/ledger-login-enabled"
 LEDGER="auth       [success=done default=die] pam_exec.so quiet stdout /usr/libexec/meridian/ledger-login"
@@ -17,7 +19,8 @@ CIL=/usr/share/selinux/packages/meridian/meridian_ledger.cil
 if command -v semodule >/dev/null && semodule -i "$CIL"; then echo "ledger-login: SELinux module installed"
 else echo "WARN ledger-login: SELinux module not installed, GDM may be denied the Ledger (text console still works)"; fi
 
-if [ ! -f "$F" ]; then echo "WARN ledger-login: $F missing, Ledger sign-in OFF"; exit 0; fi
+if [ ! -f "$F" ]; then echo "WARN ledger-login: no gdm-password, Ledger sign-in OFF"; ls /etc/pam.d /usr/lib/pam.d 2>/dev/null | grep -i gdm; exit 0; fi
+echo "ledger-login: patching $F"
 if ! python3 -IsB -c 'import sys; sys.path.insert(0,"/usr/lib/meridian/python"); import meridian_login' ; then
   echo "WARN ledger-login: Python library does not import, Ledger sign-in OFF (stock gdm-password)"; exit 0
 fi
