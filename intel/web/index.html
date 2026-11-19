@@ -6,156 +6,182 @@
 <title>Meridian Intel</title>
 <link rel="icon" href="/static/mark.svg">
 <link rel="stylesheet" href="/static/vendor/maplibre-gl.css">
+<link rel="stylesheet" href="/static/tokens.css">
 <link rel="stylesheet" href="/static/app.css">
 </head>
 <body>
-<header class="top">
-  <div class="brand"><img src="/static/mark.svg" alt=""><span class="wm">MERIDIAN</span><span class="sub">INTEL</span></div>
+<div class="band"><span>SECURED</span><span class="band-c">MERIDIAN // INTEL // <b id="band-node">LOCAL NODE</b></span><span id="band-mode">OPEN SOURCE // PERSONAL USE</span></div>
+
+<header class="bar">
+  <div class="brand"><img src="/static/mark.svg" alt=""><span class="wm">MERIDIAN</span></div>
+  <nav class="menus" id="menus">
+    <div class="menu"><button>File</button><div class="dd">
+      <a data-act="export-audit">Export audit log (CSV)</a><a data-act="reload">Reload workspace</a></div></div>
+    <div class="menu"><button>View</button><div class="dd">
+      <a data-act="view:map">COP <kbd>1</kbd></a><a data-act="view:markets">MKT <kbd>2</kbd></a><a data-act="view:analyst">ANL <kbd>3</kbd></a><a data-act="view:osint">INV <kbd>4</kbd></a>
+      <hr><a data-act="toggle:lp">Left panel <kbd>[</kbd></a><a data-act="toggle:rp">Inspector <kbd>]</kbd></a><a data-act="toggle:tl">Timeline <kbd>T</kbd></a></div></div>
+    <div class="menu"><button>Map</button><div class="dd">
+      <a data-act="base:dark">Base: DRK</a><a data-act="base:sat">Base: SAT</a><a data-act="base:s2">Base: S2C</a><a data-act="base:today">Base: D-1</a><a data-act="base:terrain">Base: TER</a><a data-act="base:outline">Base: OFF</a>
+      <hr><a data-act="3d">3D terrain</a><a data-act="mono">Mono imagery</a></div></div>
+    <div class="menu"><button>Tools</button><div class="dd">
+      <a data-act="cmd">Command <kbd>/</kbd></a><a data-act="view:settings">Keys and feeds</a></div></div>
+    <div class="menu"><button>Help</button><div class="dd"><a data-act="help">Key guide <kbd>?</kbd></a></div></div>
+  </nav>
+  <div class="ws"><span class="ws-code" id="ws-code">COP</span><span id="ws-title">Global situation</span><span class="star">☆</span></div>
   <div class="cmd">
     <svg viewBox="0 0 24 24"><path d="M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Zm5.3-2.2L21 21"/></svg>
-    <input id="cmd" autocomplete="off" spellcheck="false" placeholder="AAPL · BTC-USD · goto Taiwan Strait · fly BAW12 · who Elon Musk · ask what moved oil today?">
+    <input id="cmd" autocomplete="off" spellcheck="false" placeholder="Search / command">
     <kbd>/</kbd>
     <div id="cmd-hint" class="cmd-hint"></div>
   </div>
   <div class="stat">
-    <span id="demo-badge" class="badge" hidden>DEMO DATA</span>
-    <span class="dot" id="st-air" title="Aircraft">AIR</span>
-    <span class="dot" id="st-sea" title="Ships">SEA</span>
-    <span class="dot" id="st-evt" title="Conflict events">EVT</span>
-    <span class="dot" id="st-ai" title="Analyst">AI</span>
-    <span class="clock"><b id="clk-utc">--:--</b><i>UTC</i></span>
-    <span class="clock"><b id="clk-loc">--:--</b><i id="clk-tz">LOCAL</i></span>
+    <span id="demo-badge" class="tag warn" hidden>DEMO</span>
+    <span class="dot" id="st-air" title="TRK-A · aircraft feed">A</span>
+    <span class="dot" id="st-sea" title="TRK-M · maritime feed">M</span>
+    <span class="dot" id="st-evt" title="EVT-G · event feed">E</span>
+    <span class="dot" id="st-ai" title="ANL · analyst">AI</span>
   </div>
 </header>
 
 <nav class="rail">
-  <button data-view="map" class="on" title="Map (1)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.2 3 14.8 0 18M12 3c-3 3.2-3 14.8 0 18"/></svg><span>Map</span></button>
-  <button data-view="markets" title="Markets (2)"><svg viewBox="0 0 24 24"><path d="M3 17l5-5 4 3 8-8"/><path d="M15 7h5v5"/></svg><span>Markets</span></button>
-  <button data-view="analyst" title="Analyst (3)"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M18 15l.9 2.1L21 18l-2.1.9L18 21l-.9-2.1L15 18l2.1-.9z"/></svg><span>Analyst</span></button>
-  <button data-view="osint" title="OSINT (4)"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 21c.6-4 3.4-6 7-6s6.4 2 7 6"/><circle cx="18" cy="14" r="2.6"/><path d="M20 16l2 2"/></svg><span>OSINT</span></button>
+  <button data-view="map" class="on" title="COP · common operating picture (1)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.2 3 14.8 0 18M12 3c-3 3.2-3 14.8 0 18"/></svg></button>
+  <button data-view="markets" title="MKT · markets (2)"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></button>
+  <button data-view="analyst" title="ANL · analyst and watches (3)"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/></svg></button>
+  <button data-view="osint" title="INV · investigations (4)"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16"/><circle cx="9" cy="11" r="2.5"/><path d="M5.5 17c.6-2 1.9-3 3.5-3s2.9 1 3.5 3M14 9h4M14 12h4M14 15h2"/></svg></button>
   <div class="grow"></div>
-  <button data-view="settings" title="Keys and status"><svg viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M14 9l2 2"/></svg><span>Keys</span></button>
+  <button data-view="settings" title="SYS · keys and feeds"><svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><rect x="14" y="5" width="4" height="4"/><rect x="8" y="15" width="4" height="4"/></svg></button>
+  <button data-act="help" title="Key guide (?)"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .8-1 1.5v.7M12 17h.01"/></svg></button>
 </nav>
 
 <main>
-  <!-- MAP -->
-  <section id="v-map" class="view on">
-    <div id="map"></div>
-    <div class="panel tl">
-      <div class="seg" id="basemaps">
-        <button data-b="dark" class="on">Dark</button><button data-b="sat">Satellite</button><button data-b="s2">Sentinel-2</button>
-        <button data-b="today">Today</button><button data-b="terrain">Terrain</button><button data-b="outline">Offline</button>
-      </div>
-      <div class="layers">
-        <label><input type="checkbox" id="ly-air" checked><span>Aircraft</span><em id="n-air">0</em></label>
-        <label><input type="checkbox" id="ly-mil"><span>Military only</span></label>
-        <label><input type="checkbox" id="ly-sea" checked><span>Ships</span><em id="n-sea">0</em></label>
-        <label><input type="checkbox" id="ly-evt" checked><span>Conflict &amp; unrest</span><em id="n-evt">0</em></label>
-        <label><input type="checkbox" id="ly-lbl" checked><span>Labels &amp; borders</span></label>
-        <label><input type="checkbox" id="ly-mono"><span>Mono imagery</span></label>
-        <label><input type="checkbox" id="ly-3d"><span>3D terrain</span></label>
-      </div>
-      <div class="legend">
-        <span><i class="lg ring"></i>protest</span><span><i class="lg half"></i>coercion · assault</span>
-        <span><i class="lg solid"></i>fighting</span><span><i class="lg pulse"></i>mass violence</span>
-      </div>
-    </div>
-    <aside class="panel tr" id="drawer">
-      <div class="dhead"><span id="d-title">Conflict feed</span><button id="d-back" hidden>Back</button></div>
-      <div id="d-body" class="dbody"></div>
+  <!-- COP -->
+  <section id="v-map" class="view on cop">
+    <aside class="lp" id="lp">
+      <div class="ptabs"><button class="on" data-lpt="layers">Map layers</button><button data-lpt="sources">Data sources</button></div>
+      <div class="psearch"><input id="lp-q" placeholder="Search this map…"></div>
+      <div class="ptree" id="tree"></div>
+      <div class="ptree" id="sources" hidden></div>
+      <div class="pfoot"><span id="base-name">DRK</span><span class="sp"></span><span id="map-health">Map health</span><b id="map-health-v" class="ok">CONNECTED</b></div>
     </aside>
-    <div class="coords" id="coords"></div>
-    <div class="attrib" id="attrib"></div>
-  </section>
-
-  <!-- MARKETS -->
-  <section id="v-markets" class="view">
-    <div class="mk">
-      <div class="mk-list">
-        <div class="mk-search"><input id="mk-q" placeholder="Search or add symbol: Rheinmetall, natural gas, SOL-USD"><div id="mk-results" class="dropdown"></div></div>
-        <table class="wl"><tbody id="wl"></tbody></table>
+    <div class="center">
+      <div id="map"></div>
+      <div class="mtools l">
+        <button data-act="base-cycle" title="Cycle basemap (B)"><svg viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/></svg></button>
+        <button data-act="3d" title="3D terrain"><svg viewBox="0 0 24 24"><path d="M3 19l6-9 4 6 3-4 5 7z"/></svg></button>
+        <button data-act="home" title="World view (H)"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16"/><path d="M4 12h16M12 4v16"/></svg></button>
+        <button data-act="ring" title="Range ring at centre (R)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="1"/></svg></button>
       </div>
-      <div class="mk-main">
-        <div class="qhead">
-          <div><div class="qsym" id="q-sym">—</div><div class="qname" id="q-name"></div></div>
-          <div class="qpx"><span id="q-px">—</span><span id="q-chg"></span><small id="q-src"></small></div>
-        </div>
-        <div class="seg" id="ranges"><button>1D</button><button>5D</button><button>1M</button><button>6M</button><button class="on">1Y</button><button>5Y</button><button>MAX</button>
-          <span class="sp"></span><button id="ct-line" class="on">Line</button><button id="ct-candle">Candles</button><button id="q-add">+ Watchlist</button><button id="q-ask">Ask analyst</button></div>
-        <div id="chart"></div>
-        <div class="qstats" id="q-stats"></div>
+      <div class="coords" id="coords"></div>
+      <div class="attrib" id="attrib"></div>
+      <div class="timeline" id="tl">
+        <div class="tl-head"><b>Timeline</b><span class="tl-now" id="tl-now">--</span><button class="tl-live on" id="tl-live">● LIVE</button><span class="sp"></span><span class="muted" id="tl-range">T−60 MIN</span></div>
+        <div class="tl-body"><canvas id="tl-canvas"></canvas><div class="tl-legend" id="tl-legend"></div></div>
       </div>
     </div>
+    <aside class="rp" id="rp">
+      <div class="rp-head"><span class="rp-type" id="d-type">FEED</span><span id="d-title">EVT-G · last 60 min</span><button id="d-back" class="ib" hidden title="Back to feed">×</button></div>
+      <div class="rp-tabs" id="d-tabs" hidden></div>
+      <div id="d-body" class="rp-body"></div>
+    </aside>
   </section>
 
-  <!-- ANALYST -->
-  <section id="v-analyst" class="view">
-    <div class="an">
-      <div class="chat">
-        <div id="chat-log" class="chat-log"></div>
-        <form id="chat-form" class="chat-form"><textarea id="chat-in" rows="2" placeholder="Ask anything: “Which tankers are near Hormuz?”, “Summarise fighting in Sudan this hour”, “Watch gold and the Fed”"></textarea><button>Ask</button></form>
+  <!-- MKT -->
+  <section id="v-markets" class="view mkt">
+    <aside class="lp">
+      <div class="ptabs"><button class="on">Watchlist</button></div>
+      <div class="psearch mk-search"><input id="mk-q" placeholder="Symbol or name…"><div id="mk-results" class="dropdown"></div></div>
+      <table class="grid wl"><thead><tr><th>SYM</th><th></th><th class="r">LAST</th><th class="r">CHG</th><th></th></tr></thead><tbody id="wl"></tbody></table>
+    </aside>
+    <div class="center mk-main">
+      <div class="qhead">
+        <span class="rp-type">INSTR</span><span class="qsym" id="q-sym">—</span><span class="qname" id="q-name"></span>
+        <span class="sp"></span><span id="q-px" class="qpx">—</span><span id="q-chg"></span><small id="q-src"></small>
       </div>
-      <div class="watches">
-        <h3>Watches <small>re-checked hourly, digested by the analyst</small></h3>
+      <div class="toolbar" id="ranges"><button>1D</button><button>5D</button><button>1M</button><button>6M</button><button class="on">1Y</button><button>5Y</button><button>MAX</button>
+        <span class="sep"></span><button id="ct-line" class="on">LINE</button><button id="ct-candle">OHLC</button><span class="sp"></span><button id="q-add">+ WATCH</button><button id="q-ask">→ ANL</button></div>
+      <div id="chart"></div>
+    </div>
+    <aside class="rp">
+      <div class="rp-head"><span class="rp-type">STATS</span><span>Range statistics</span></div>
+      <div class="rp-body"><dl class="kv" id="q-stats"></dl></div>
+    </aside>
+  </section>
+
+  <!-- ANL -->
+  <section id="v-analyst" class="view anl">
+    <div class="center chat">
+      <div class="sechead"><b>ANL-01</b><span>Analyst console</span><span class="sp"></span><span class="muted" id="anl-model"></span></div>
+      <div id="chat-log" class="chat-log"></div>
+      <form id="chat-form" class="chat-form"><span class="prompt">&gt;</span><textarea id="chat-in" rows="2" placeholder="Query"></textarea><button>RUN</button></form>
+    </div>
+    <aside class="rp watches">
+      <div class="rp-head"><span class="rp-type">WATCH</span><span>Standing watches · 60 min cycle</span></div>
+      <div class="rp-body">
         <form id="w-form" class="w-form">
-          <input name="topic" placeholder="Topic, e.g. Red Sea shipping" required>
-          <input name="query" placeholder="News query (optional)">
-          <input name="symbols" placeholder="Symbols, e.g. CL=F,ZIM (optional)">
-          <textarea name="instructions" rows="2" placeholder="What to track or alert on (optional)"></textarea>
-          <button>Add watch</button>
+          <input name="topic" placeholder="Topic" required>
+          <input name="query" placeholder="News query">
+          <input name="symbols" placeholder="Symbols (CL=F,ZIM)">
+          <textarea name="instructions" rows="2" placeholder="Track / alert on"></textarea>
+          <button>+ ADD WATCH</button>
         </form>
         <div id="w-list"></div>
       </div>
-    </div>
+    </aside>
   </section>
 
-  <!-- OSINT -->
-  <section id="v-osint" class="view">
-    <div class="os">
-      <div class="os-cases">
-        <div class="scope" id="scope">
-          <b>Scope</b>
-          <p>Public figures and companies: full public profile, official accounts, news, filings.</p>
-          <p>Private individuals: username discovery, breach exposure for an email you have, news mentions, and licensed PI providers. No home addresses or personal phone numbers; those come from the licensed providers, who check licence and purpose.</p>
-          <p>Every lookup is tied to a case and written to a tamper-evident audit log.</p>
-          <button id="scope-ok">Got it</button>
-        </div>
-        <h3>Cases <button id="c-new-btn" class="mini">New case</button></h3>
-        <form id="c-form" class="c-form" hidden>
-          <input name="title" placeholder="Case title" required>
-          <input name="client" placeholder="Client (optional)">
-          <select name="basis" id="c-basis"></select>
-          <textarea name="purpose" rows="3" placeholder="Purpose of the investigation (required, goes in the audit log)" required></textarea>
-          <button>Open case</button>
-        </form>
-        <div id="c-list"></div>
+  <!-- INV -->
+  <section id="v-osint" class="view inv">
+    <aside class="lp os-cases">
+      <div class="ptabs"><button class="on">Cases</button><span class="sp"></span><button id="c-new-btn" class="ib" title="New case">+</button></div>
+      <div class="scope" id="scope">
+        <b>SCOPE</b>
+        <p>PUB / ORG: full public profile, official accounts, news, filings.</p>
+        <p>PRV: usernames, breach exposure for an email you hold, news, licensed providers. No home addresses or personal phone numbers.</p>
+        <p>Every query is bound to a case and logged.</p>
+        <button id="scope-ok">ACK</button>
       </div>
-      <div class="os-main" id="os-main"><div class="empty">Open or create a case to start.</div></div>
-    </div>
+      <form id="c-form" class="c-form" hidden>
+        <input name="title" placeholder="Case title" required>
+        <input name="client" placeholder="Client">
+        <select name="basis" id="c-basis"></select>
+        <textarea name="purpose" rows="3" placeholder="Purpose (logged)" required></textarea>
+        <button>OPEN CASE</button>
+      </form>
+      <div id="c-list"></div>
+    </aside>
+    <div class="center os-main" id="os-main"><div class="empty">NO CASE SELECTED</div></div>
   </section>
 
-  <!-- SETTINGS -->
-  <section id="v-settings" class="view">
-    <div class="st">
-      <h2>Keys and feeds</h2>
-      <p class="muted">Keys live in GNOME Keyring. Set one in a terminal with <code>meridian-intel keys set NAME</code> (input hidden), then reload.</p>
-      <table class="kt"><tbody id="keys"></tbody></table>
-      <h2>Sources</h2>
-      <table class="kt"><tbody>
-        <tr><td>Aircraft</td><td>adsb.lol (regional), OpenSky (wide views)</td><td>free</td></tr>
-        <tr><td>Ships</td><td>aisstream.io websocket</td><td>free key</td></tr>
-        <tr><td>Conflict</td><td>GDELT 2.0 events, last hour, machine-coded</td><td>free</td></tr>
-        <tr><td>News</td><td>GDELT DOC 2.0</td><td>free</td></tr>
-        <tr><td>Markets</td><td>Yahoo chart API, CoinGecko, ECB (Frankfurter), Stooq</td><td>free</td></tr>
-        <tr><td>Imagery</td><td>CARTO, Esri World Imagery, EOX Sentinel-2 cloudless, NASA GIBS, AWS Terrain</td><td>free</td></tr>
-        <tr><td>Analyst</td><td>Claude API, claude-opus-5-5</td><td>paid key</td></tr>
-        <tr><td>OSINT</td><td>Wikidata, Wikipedia, GDELT, SEC EDGAR, built-in username sweep, HIBP</td><td>HIBP paid</td></tr>
+  <!-- SYS -->
+  <section id="v-settings" class="view sys">
+    <div class="center st">
+      <div class="sechead"><b>SYS</b><span>Keys and feeds</span></div>
+      <p class="muted pad">Keys are held in GNOME Keyring. Set one with <code>meridian-intel keys set NAME</code>, then reload.</p>
+      <table class="grid kt"><thead><tr><th>KEY</th><th>USE</th><th class="r">STATE</th></tr></thead><tbody id="keys"></tbody></table>
+      <div class="sechead"><b>SRC</b><span>Sources</span></div>
+      <table class="grid kt"><thead><tr><th>CODE</th><th>SOURCE</th><th class="r">TIER</th></tr></thead><tbody>
+        <tr><td>TRK-A</td><td>adsb.lol (regional), OpenSky (wide)</td><td class="r">free</td></tr>
+        <tr><td>TRK-M</td><td>aisstream.io websocket</td><td class="r">free key</td></tr>
+        <tr><td>EVT-G</td><td>GDELT 2.0 events, machine-coded, 60 min</td><td class="r">free</td></tr>
+        <tr><td>NWS-G</td><td>GDELT DOC 2.0</td><td class="r">free</td></tr>
+        <tr><td>MKT</td><td>Yahoo chart API · CoinGecko · ECB · Stooq</td><td class="r">free</td></tr>
+        <tr><td>IMG</td><td>CARTO · Esri World Imagery · EOX S2 cloudless · NASA GIBS · AWS Terrain</td><td class="r">free</td></tr>
+        <tr><td>ANL</td><td>Claude API, claude-opus-5-5</td><td class="r">paid key</td></tr>
+        <tr><td>INV</td><td>Wikidata · Wikipedia · GDELT · SEC EDGAR · username sweep · HIBP</td><td class="r">HIBP paid</td></tr>
       </tbody></table>
     </div>
   </section>
 </main>
 
-<footer class="ticker"><div class="tk-track" id="ticker"></div></footer>
+<footer class="sbar">
+  <span id="sb-ws">COP</span><span id="sb-counts"></span><span class="sp"></span><span id="sb-coords"></span><span id="sb-feeds"></span>
+  <span class="clock"><b id="clk-utc">--:--:--</b>Z</span><span class="clock"><b id="clk-loc">--:--</b><i id="clk-tz">LCL</i></span>
+</footer>
+
+<div id="help" class="modal" hidden><div class="mbox">
+  <div class="rp-head"><span class="rp-type">KEY</span><span>Key guide</span><span class="sp"></span><button class="ib" data-act="help">×</button></div>
+  <div class="mgrid" id="help-body"></div>
+</div></div>
 <div id="toast" class="toast" hidden></div>
 
 <script src="/static/vendor/maplibre-gl-csp.js"></script>

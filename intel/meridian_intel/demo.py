@@ -81,7 +81,7 @@ def events() -> list[dict]:
         out.append({"id": str(i), "cat": cat, "code": "190", "lat": lat + r.gauss(0, 0.6), "lon": lon + r.gauss(0, 0.6),
                     "place": place, "cc": cc, "a1": "Demo actor", "a2": "", "gold": -r.uniform(1, 10),
                     "mentions": r.randrange(1, 60), "tone": round(-r.uniform(1, 9), 1),
-                    "ts": time.strftime("%Y%m%d%H%M%S", time.gmtime()), "url": "https://example.org/demo"})
+                    "ts": time.strftime("%Y%m%d%H%M%S", time.gmtime(time.time() - r.uniform(0, 3500))), "url": "https://example.org/demo"})
     return out
 
 

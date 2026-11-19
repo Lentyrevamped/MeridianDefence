@@ -7,6 +7,14 @@ module with an audit log. Pure mono Meridian look (ink / graphite / slate / fog 
 Status 19 Nov 2026: phase 1 prototype built (`intel/`), tested in the cloud on demo data only (the cloud network blocks the
 live feeds). Live feeds get their first real test on meridian2's VM (`docs/VM-TEST.md`).
 
+## 0. Design language (19 Nov, Gotham-style revision)
+
+Square, dense, operator console. Four workspaces, each a 3-column grid (tree | canvas | inspector):
+**COP** (1) map with TRK-A air, TRK-M maritime, EVT-G events + 60-min timeline · **MKT** (2) instruments with history ·
+**ANL** (3) analyst console + standing watches · **INV** (4) cases, subjects, hash-chained audit. SYS holds keys/feeds.
+Codes over words (PRT/COE/ASL/FGT/MAV, CIV/MIL/EMG, PUB/ORG/PRV); `?` opens the key guide. Purple SECURED band and
+tokens (`web/tokens.css`) are shared with the Meridian OS Gotham theme; colour (blue/green/amber/red) only encodes data.
+
 ## 1. Architecture
 
 ```

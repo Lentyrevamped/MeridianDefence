@@ -1,0 +1,14 @@
+/* Meridian Gotham-style tokens, shared by Meridian OS and Meridian Intel (values from the Intel thread, 19 Nov). */
+:root{
+  --m-bg0:#111418; --m-bg1:#181C21; --m-bg2:#1F242B; --m-bg3:#262C34;
+  --m-line:#2A3038; --m-line2:#3A424C;
+  --m-t1:#E6E8EB; --m-t2:#8A939E; --m-t3:#5C6570;
+  --m-focus:#F1F1EE;               /* selection / focus: bone */
+  /* data colours only, never on chrome */
+  --m-blue:#4C90F0; --m-green:#32A467; --m-amber:#E8A33D; --m-red:#E5484D;
+  /* top band: purple "SECURED" (Dongwon 19 Nov; placeholder for build status) */
+  --m-band:#4E2A9A; --m-band-t:#F1ECFF;
+  --m-r-panel:0px; --m-r-ctl:2px;
+  --m-sans:Inter,system-ui,sans-serif; --m-mono:"JetBrains Mono",ui-monospace,monospace;
+  /* body 12px; labels 11px uppercase +0.06em; rows 24px; controls 28px; status bar 22px */
+}

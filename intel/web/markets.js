@@ -6,10 +6,10 @@ export class Markets {
     this.hooks = hooks; this.sym = "^GSPC"; this.range = "1Y"; this.kind = "line"; this.items = [];
     const el = document.getElementById("chart");
     this.chart = LightweightCharts.createChart(el, {
-      autoSize: true, layout: { background: { color: "#0A0A0C" }, textColor: "#85858F", fontFamily: "Inter", fontSize: 11 },
-      grid: { vertLines: { color: "rgba(241,241,238,.04)" }, horzLines: { color: "rgba(241,241,238,.06)" } },
-      rightPriceScale: { borderColor: "rgba(241,241,238,.08)" }, timeScale: { borderColor: "rgba(241,241,238,.08)", timeVisible: true },
-      crosshair: { vertLine: { color: "rgba(241,241,238,.3)", labelBackgroundColor: "#26262B" }, horzLine: { color: "rgba(241,241,238,.3)", labelBackgroundColor: "#26262B" } },
+      autoSize: true, layout: { background: { color: "#111418" }, textColor: "#8A939E", fontFamily: "ui-monospace, monospace", fontSize: 10 },
+      grid: { vertLines: { color: "#1C2128" }, horzLines: { color: "#1C2128" } },
+      rightPriceScale: { borderColor: "#2A3038" }, timeScale: { borderColor: "#2A3038", timeVisible: true },
+      crosshair: { mode: 0, vertLine: { color: "#5C6570", labelBackgroundColor: "#262C34" }, horzLine: { color: "#5C6570", labelBackgroundColor: "#262C34" } },
     });
     this.series = null;
     document.querySelectorAll("#ranges button").forEach((b) => {
@@ -25,7 +25,7 @@ export class Markets {
       const v = q.value.trim(); if (!v) { dd.classList.remove("on"); return; }
       try {
         const r = await api(`/api/search?q=${encodeURIComponent(v)}`);
-        dd.innerHTML = r.results.map((x) => `<div data-s="${esc(x.symbol)}"><b>${esc(x.symbol)}</b><span>${esc(x.name)}</span><em>${esc(x.type)} · ${esc(x.exchange)}</em></div>`).join("") || `<div><span>No match. Press Enter to try “${esc(v.toUpperCase())}”.</span></div>`;
+        dd.innerHTML = r.results.map((x) => `<div data-s="${esc(x.symbol)}"><b>${esc(x.symbol)}</b><span>${esc(x.name)}</span><em>${esc(x.type)} · ${esc(x.exchange)}</em></div>`).join("") || `<div><b>—</b><span>No match. Enter to try ${esc(v.toUpperCase())}</span></div>`;
         dd.classList.add("on");
         dd.querySelectorAll("[data-s]").forEach((d) => d.onclick = () => { dd.classList.remove("on"); q.value = ""; this.open(d.dataset.s); });
       } catch { dd.classList.remove("on"); }
@@ -44,7 +44,7 @@ export class Markets {
 
   async loadWatchlist() {
     try {
-      const d = await api("/api/watchlist"); this.items = d.items; this.renderList(); this.hooks.ticker(d.items);
+      const d = await api("/api/watchlist"); this.items = d.items; this.renderList();
     } catch (e) { toast(`Watchlist: ${e.message}`); }
   }
 
@@ -52,10 +52,10 @@ export class Markets {
     const tb = document.getElementById("wl");
     tb.innerHTML = this.items.map((it, i) => { const c = chg(it.price, it.prev);
       return `<tr data-i="${i}" class="${it.symbol === this.sym ? "on" : ""}"><td class="s"><b>${esc(it.symbol)}</b><span>${esc(it.label || it.name || "")}</span></td>
-      <td><canvas></canvas></td><td class="p">${it.error ? `<span class="dn">${esc(it.error).slice(0, 30)}</span>` : `<b>${fmt(it.price)}</b><span class="${c.cls}">${c.txt}</span>`}</td>
+      <td><canvas></canvas></td><td class="p">${it.error ? '<span class="dim">N/A</span>' : fmt(it.price)}</td><td class="c ${c.cls}">${it.error ? "" : (c.pct >= 0 ? "+" : "") + c.pct.toFixed(2) + "%"}</td>
       <td class="x" title="Remove">×</td></tr>`; }).join("");
     tb.querySelectorAll("tr").forEach((tr) => { const it = this.items[+tr.dataset.i];
-      spark(tr.querySelector("canvas"), it.spark);
+      spark(tr.querySelector("canvas"), it.spark, 46, 20);
       tr.onclick = (e) => { if (e.target.classList.contains("x")) { this.remove(it.symbol); return; } this.open(it.symbol); };
     });
   }
@@ -76,16 +76,17 @@ export class Markets {
       if (sym !== this.sym || rng !== this.range) return;
       this.name = h.name;
       const c = chg(h.price, h.prev);
-      document.getElementById("q-name").textContent = `${h.name} · ${h.exchange} · ${h.currency}`;
+      document.getElementById("q-name").textContent = `${h.name} · ${h.exchange}`;
       document.getElementById("q-px").textContent = fmt(h.price);
-      const qc = document.getElementById("q-chg"); qc.className = c.cls; qc.textContent = c.txt ? `${c.abs >= 0 ? "+" : ""}${fmt(c.abs)}  ${c.txt}` : "";
-      document.getElementById("q-src").textContent = `source: ${h.src}`;
+      const qc = document.getElementById("q-chg"); qc.className = c.cls; qc.textContent = c.txt ? `${c.abs >= 0 ? "+" : ""}${fmt(c.abs)} (${c.pct >= 0 ? "+" : ""}${c.pct.toFixed(2)}%)` : "";
+      document.getElementById("q-src").textContent = `${rng} · ${h.currency || ""}`;
       if (this.series) this.chart.removeSeries(this.series);
       if (this.kind === "candle") {
-        this.series = this.chart.addCandlestickSeries({ upColor: "#F1F1EE", downColor: "#26262B", borderUpColor: "#F1F1EE", borderDownColor: "#85858F", wickUpColor: "#F1F1EE", wickDownColor: "#85858F" });
+        this.series = this.chart.addCandlestickSeries({ upColor: "#32A467", downColor: "#E5484D", borderUpColor: "#32A467", borderDownColor: "#E5484D", wickUpColor: "#32A467", wickDownColor: "#E5484D" });
         this.series.setData(h.points.map((p) => ({ time: p.t, open: p.o ?? p.c, high: p.h ?? p.c, low: p.l ?? p.c, close: p.c })));
       } else {
-        this.series = this.chart.addAreaSeries({ lineColor: "#F1F1EE", lineWidth: 1.5, topColor: "rgba(241,241,238,.18)", bottomColor: "rgba(241,241,238,0)", priceLineColor: "#85858F" });
+        const upc = (h.points.at(-1)?.c ?? 0) >= (h.points[0]?.c ?? 0);
+        this.series = this.chart.addAreaSeries({ lineColor: upc ? "#32A467" : "#E5484D", lineWidth: 1.5, topColor: upc ? "rgba(50,164,103,.16)" : "rgba(229,72,77,.16)", bottomColor: "rgba(0,0,0,0)", priceLineColor: "#5C6570", priceLineStyle: 2 });
         this.series.setData(h.points.map((p) => ({ time: p.t, value: p.c })));
       }
       this.chart.timeScale().fitContent();
@@ -96,7 +97,7 @@ export class Markets {
       const per = { "1D": 78 * 252, "5D": 26 * 252, "1M": 7 * 252, "6M": 252, "1Y": 252, "5Y": 52, MAX: 12 }[rng];
       document.getElementById("q-stats").innerHTML = [["Range change", `${((last / first - 1) * 100).toFixed(2)}%`], ["High", fmt(hi)], ["Low", fmt(lo)],
         ["From high", `${((last / hi - 1) * 100).toFixed(2)}%`], ["Ann. volatility", `${(sd * Math.sqrt(per) * 100).toFixed(1)}%`], ["Points", h.points.length.toLocaleString()]]
-        .map(([k, v]) => `<div><span>${k}</span><b>${v}</b></div>`).join("");
+        .map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("") + `<dt>First</dt><dd>${fmt(first)}</dd><dt>Last</dt><dd>${fmt(last)}</dd><dt>Source</dt><dd>${esc(h.src)}</dd><dt>Currency</dt><dd>${esc(h.currency || "—")}</dd>`;
     } catch (e) {
       document.getElementById("q-name").textContent = `No data: ${e.message}`;
       document.getElementById("q-px").textContent = "—"; document.getElementById("q-chg").textContent = "";

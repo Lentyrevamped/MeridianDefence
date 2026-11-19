@@ -37,5 +37,5 @@ export function spark(canvas, values, w = 88, h = 26) {
   const lo = Math.min(...values), hi = Math.max(...values), r = hi - lo || 1;
   c.beginPath();
   values.forEach((v, i) => { const x = (i / (values.length - 1)) * w, y = h - 2 - ((v - lo) / r) * (h - 4); i ? c.lineTo(x, y) : c.moveTo(x, y); });
-  c.strokeStyle = values[values.length - 1] >= values[0] ? "#F1F1EE" : "#85858F"; c.lineWidth = 1.2; c.stroke();
+  c.strokeStyle = values[values.length - 1] >= values[0] ? "#32A467" : "#E5484D"; c.lineWidth = 1; c.stroke();
 }
