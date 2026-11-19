@@ -1,0 +1,140 @@
+#!/usr/bin/python3 -IsB
+"""meridian-ledger: Ledger sign-in for GDM and the lock screen.
+
+  meridian-ledger status [user]     show whether Ledger sign-in is on
+  run0 meridian-ledger enroll [user] turn it on: the Ledger becomes the ONLY way in at GDM and the lock screen
+  meridian-ledger test [user]       one sign-in on the Ledger, nothing changes
+  run0 meridian-ledger disable [user] back to the password everywhere
+
+Your password always keeps working at a text console (Ctrl+Alt+F3), for sudo/run0 and admin prompts.
+"""
+import json
+import os
+import pwd
+import sys
+
+sys.path.insert(0, "/usr/lib/meridian/python")
+
+from meridian_auth import protocol as P  # noqa: E402
+from meridian_auth.client import Client  # noqa: E402
+from meridian_auth.transport import TransportError  # noqa: E402
+import meridian_login as L  # noqa: E402
+
+
+def say(msg: str) -> None:
+    print(f"  {msg}", flush=True)
+
+
+def default_user() -> str:
+    for var in ("RUN0_USER", "SUDO_USER", "PKEXEC_UID"):
+        v = os.environ.get(var)
+        if v:
+            return pwd.getpwuid(int(v)).pw_name if v.isdigit() else v
+    return pwd.getpwuid(os.getuid()).pw_name
+
+
+def need_root() -> None:
+    if os.geteuid() != 0:
+        sys.exit("Run it as root: run0 meridian-ledger " + " ".join(sys.argv[1:]))
+
+
+def need_user(user: str) -> str:
+    L.check_user(user)
+    try:
+        pwd.getpwnam(user)
+    except KeyError:
+        sys.exit(f"No such user: {user}")
+    return user
+
+
+def cmd_status(user: str) -> int:
+    path = L.enrollment_path(user)
+    if not path.exists():
+        print(f"{user}: Ledger sign-in OFF (password at GDM and the lock screen)")
+        return 0
+    d = json.loads(path.read_text())
+    try:
+        L.load_enrollment(user)
+        ok = "ON"
+    except L.LoginError as e:
+        ok = f"BROKEN ({e})"
+    print(f"{user}: Ledger sign-in {ok}\n  fingerprint {d.get('fingerprint')}  slot {d.get('slot')}  "
+          f"enrolled {d.get('enrolled_at')}\n  password still works at Ctrl+Alt+F3, sudo/run0 and admin prompts")
+    return 0
+
+
+def cmd_test(user: str) -> int:
+    enr = L.load_enrollment(user)
+    if enr is None:
+        sys.exit(f"{user} has no Ledger enrolled. Enrol first: run0 meridian-ledger enroll {user}")
+    print("Test sign-in (nothing changes):")
+    L.login(user, say)
+    print("OK, this Ledger signs you in.")
+    return 0
+
+
+def cmd_enroll(user: str) -> int:
+    need_root()
+    print(f"""Ledger sign-in for '{user}'
+
+After this, GDM and the lock screen accept ONLY your Ledger (Meridian app, "Verify identity").
+Your password keeps working at a text console (Ctrl+Alt+F3), for run0/sudo and admin prompts.
+Lost Ledger: Ctrl+Alt+F3, log in with your password, run: run0 meridian-ledger disable {user}
+Do not register a computer on this Ledger: registered-computers mode makes sign-in requests fail.
+The GNOME keyring will ask for your password once after each sign-in (no password typed at GDM).
+""")
+    if sys.stdin.isatty():
+        if input("Type yes to continue: ").strip().lower() != "yes":
+            print("Nothing changed.")
+            return 1
+    t = L.open_ledger(say)
+    try:
+        c = Client(t)
+        print("Approve the public key on your Ledger.")
+        try:
+            pub = c.get_public_key(L.SLOT, confirm=True)
+        except P.DeviceError as e:
+            raise L._device_error(e) from None
+        P.load_pubkey(pub)
+        print(f"Key fingerprint {P.fingerprint(pub)}. Now confirm enrolment on the Ledger.")
+        L.verify_with_ledger(t, L.SLOT, pub, say, info=f"Enrol {user}", action=P.ACTION_ENROLL)
+        print("Last check: one normal sign-in.")
+        L.verify_with_ledger(t, L.SLOT, pub, say)
+    finally:
+        t.close()
+    path = L.save_enrollment(user, L.SLOT, pub)
+    print(f"Done. {path}\nLock the screen (Super+L) to try it. Rescue: Ctrl+Alt+F3, run0 meridian-ledger disable {user}")
+    return 0
+
+
+def cmd_disable(user: str) -> int:
+    need_root()
+    path = L.enrollment_path(user)
+    if not path.exists() and not path.is_symlink():
+        print(f"{user}: already off.")
+        return 0
+    path.unlink()
+    print(f"{user}: Ledger sign-in OFF. GDM and the lock screen take your password again.")
+    return 0
+
+
+def main(argv: list[str]) -> int:
+    cmds = {"status": cmd_status, "test": cmd_test, "enroll": cmd_enroll, "enrol": cmd_enroll,
+            "disable": cmd_disable}
+    if len(argv) < 2 or argv[1] not in cmds:
+        print(__doc__.strip())
+        return 0 if len(argv) < 2 or argv[1] in ("-h", "--help", "help") else 2
+    user = need_user(argv[2] if len(argv) > 2 else default_user())
+    try:
+        return cmds[argv[1]](user)
+    except L.LoginError as e:
+        print(f"Failed: {e}", file=sys.stderr)
+    except (TransportError, P.ProtocolError) as e:
+        print(f"Ledger error: {e}", file=sys.stderr)
+    except KeyboardInterrupt:
+        print("\nCancelled, nothing changed.", file=sys.stderr)
+    return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

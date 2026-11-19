@@ -1,9 +1,6 @@
 # Meridian OS boot theme (Plymouth script module).
-# States: intro -> pin -> (ledger) -> splash -> quit (final frame = mark + wordmark, kept for the GDM hand-off).
-# Ledger step is driven by plymouth messages from the initrd helper (plain text, so a stock theme still shows them):
-#   "Confirm on your Ledger · code 2CCA 74AB C0C7"   show the confirm screen with that code (12 hex, 3 groups)
-#   "Approved on Ledger"                         approved
-#   "Rejected on Ledger"                         rejected
+# States: intro -> pin -> splash -> quit (final frame = mark + wordmark, kept for the GDM hand-off).
+# Disk unlock is stock (TPM+PIN, recovery key); this theme only draws the prompt. No Ledger at boot.
 # Art is rendered for an 1800 px tall panel and scaled by S for other panels. No fonts needed in the initrd.
 
 Window.SetBackgroundTopColor(0.0392, 0.0392, 0.0471);
@@ -25,14 +22,8 @@ fun mix(a, b, k) { return a + (b - a) * k; }
 star_src = Image("star.png");                      # master, scaled per frame
 word_img = ld("wordmark"); sign_img = ld("signoff"); white = Image("white.png");
 t_enter = ld("t-enter"); t_pass = ld("t-pass"); t_bad = ld("t-incorrect"); t_sub = ld("t-sub"); t_hint = ld("t-errhint");
-t_led = ld("t-ledger"); t_led_sub = ld("t-ledger-sub"); t_ok = ld("t-approved"); t_ok_sub = ld("t-approved-sub");
-t_rej = ld("t-rejected"); t_rej_sub = ld("t-rejected-sub");
-st_wait = ld("st-wait"); st_ok = ld("st-ok"); spin_src = ld("spinner");
 f_img = ld("field"); f_err = ld("field-error"); ph_img = ld("ph"); sub_off = ld("submit-off"); sub_on = ld("submit-on");
 dot_img = ld("dot"); caret_img = ld("caret");
-chip_img = ld("chip"); chip_ok = ld("chip-ok"); dev_img = ld("device"); dev_ok = ld("device-ok");
-HEX = "0123456789ABCDEF";
-for (hx = 0; hx < 16; hx++) { hc = HEX.CharAt(hx); glyph[hc] = ld("g-" + hc); glyph_s[hc] = ld("gs-" + hc); }
 
 # ---- sprites ----
 star = Sprite(); star.SetZ(20);
@@ -40,16 +31,11 @@ word = mk(word_img, 10); sign = mk(sign_img, 10);
 track = Sprite(); track.SetZ(10); bar = Sprite(); bar.SetZ(11);
 title = mk(t_enter, 10); sub = mk(t_sub, 10); hint = mk(t_hint, 10);
 field = mk(f_img, 10); ph = mk(ph_img, 12); submit = mk(sub_off, 12); caret = mk(caret_img, 13);
-led_title = mk(t_led, 10); led_sub = mk(t_led_sub, 10); chip = mk(chip_img, 10); dev = mk(dev_img, 10);
-st = mk(st_wait, 10); spin = Sprite(); spin.SetZ(11);
-holdtr = Sprite(); holdtr.SetZ(12); holdbar = Sprite(); holdbar.SetZ(13);
-for (ci0 = 0; ci0 < 12; ci0++) { cg[ci0] = Sprite(); cg[ci0].SetZ(12); sg[ci0] = Sprite(); sg[ci0].SetZ(14); }
 ndots = 0;
 
 # ---- state ----
 mode = "intro"; tm = 0; t_mode = 0;              # tm = seconds since start, t_mode = seconds in mode
 bullets = 0; submitted = 0; err = 0; t_err = -10; passmode = 0;
-led_state = "wait"; t_led_ok = -10; code = "";
 progress = 0; quitting = 0; pin_seen = 0;
 
 fun set_mode(m) { global.mode = m; global.t_mode = 0; }
@@ -73,18 +59,6 @@ fun normal_cb() {
 }
 Plymouth.SetDisplayNormalFunction(normal_cb);
 
-fun starts(text, pre) { k = 0; while (pre.CharAt(k) != "") { if (text.CharAt(k) != pre.CharAt(k)) return 0; k++; } return 1; }
-fun message_cb(text) {
-  # Human-readable on purpose: with a stock theme the same text is simply printed.
-  if (starts(text, "Confirm on your Ledger")) {
-    # code = the characters after the last "code " ("3387 45BE 5C20"); spaces dropped, first 12 used
-    k = 0; at = -1; while (text.CharAt(k + 4) != "") { if (text.CharAt(k) == "c" && text.CharAt(k + 1) == "o" && text.CharAt(k + 2) == "d" && text.CharAt(k + 3) == "e" && text.CharAt(k + 4) == " ") at = k + 5; k++; }
-    cc = ""; if (at >= 0) { k = at; while (text.CharAt(k) != "") { ch = text.CharAt(k); if (ch != " ") cc = cc + ch; k++; } }
-    global.code = cc; global.led_state = "wait"; global.err = 0; set_mode("ledger");
-  } else if (starts(text, "Approved on Ledger")) { global.led_state = "ok"; global.t_led_ok = tm; }
-  else if (starts(text, "Rejected on Ledger")) { global.led_state = "fail"; }
-}
-Plymouth.SetMessageFunction(message_cb);
 
 fun progress_cb(duration, p) { global.progress = p; }
 Plymouth.SetBootProgressFunction(progress_cb);
@@ -105,27 +79,24 @@ fun draw_star(h, cy, op) {
 }
 
 # ---- frame ----
-grow = 0; pin_op = 0; led_op = 0; splash_op = 0;
+grow = 0; pin_op = 0; splash_op = 0;
 fun refresh() {
   global.tm += 1 / FPS; global.t_mode += 1 / FPS;
   # fall into the splash when nothing asks for input
   if (mode == "intro" && tm > 2.5) set_mode("splash");
   if (mode == "wait" && t_mode > 0.9) set_mode("splash");
-  if (mode == "ledger" && led_state == "ok" && tm - t_led_ok > 0.7) set_mode("splash");
 
   # targets, eased towards each frame (about 300 ms)
   k = 0.12;
   if (mode == "pin" || mode == "wait" && t_mode < 0.25) pt = 1; else pt = 0;
-  if (mode == "ledger") lt = 1; else lt = 0;
   if (mode == "splash") gt = 1; else gt = 0;
-  global.pin_op = mix(pin_op, pt, k * 1.4); global.led_op = mix(led_op, lt, k * 1.2); global.grow = mix(grow, gt, 0.06);
+  global.pin_op = mix(pin_op, pt, k * 1.4); global.grow = mix(grow, gt, 0.06);
   if (mode == "splash" && t_mode > 0.35) global.splash_op = mix(splash_op, 1, 0.08); else if (mode != "splash") global.splash_op = mix(splash_op, 0, 0.2);
 
   # mark: 80 px @585 (prompts) -> 245 px @765 (splash)
   g = ease(grow);
   intro_op = clamp01(tm / 0.6);
-  # the Ledger device picture takes the mark's place while it is on screen
-  draw_star(mix(80, 245, g), mix(585, 765, g), intro_op * (1 - led_op));
+  draw_star(mix(80, 245, g), mix(585, 765, g), intro_op);
   sign.SetOpacity(0.5 * intro_op); put(sign, sign_img, CX, Y(1722));
 
   # ---- PIN ----
@@ -153,34 +124,6 @@ fun refresh() {
     show(submit, si, fx + fi.GetWidth() / 2 - 5 * S - 1.25 * S - 7.5 * S - si.GetWidth() / 2, fy, o);
     if (err) show(hint, t_hint, CX, Y(856) + dy, o * clamp01((tm - t_err) / 0.25)); else hide(hint);
   } else { hide(title); hide(sub); hide(field); hide(ph); hide(submit); hide(caret); hide(hint); for (i = 0; i < ndots; i++) dots[i].SetOpacity(0); }
-
-  # ---- Ledger ----
-  if (led_op > 0.01) {
-    o = led_op; dy = (1 - led_op) * 10 * S;
-    isok = (led_state == "ok"); isbad = (led_state == "fail");
-    if (isok) di = dev_ok; else di = dev_img;
-    show(dev, di, CX, Y(615) + dy, o);
-    dl = CX - di.GetWidth() / 2; dt = Y(615) + dy - di.GetHeight() / 2;
-    if (isok) { tt = t_ok; ts = t_ok_sub; } else if (isbad) { tt = t_rej; ts = t_rej_sub; } else { tt = t_led; ts = t_led_sub; }
-    show(led_title, tt, CX, Y(812) + dy, o); show(led_sub, ts, CX, Y(850) + dy, o);
-    if (isok) ci = chip_ok; else ci = chip_img;
-    show(chip, ci, CX, Y(932) + dy, o);
-    # glyph centres: big chip measured from the rendered chip (design px from its centre);
-    # device code bar = the real app layout (300x400 page: first char centre x 110, pitch 12, group pitch 52, y 36; app 1.5.0)
-    for (i = 0; i < 12; i++) {
-      c = code.CharAt(i);
-      if (c != "" && glyph[c]) {
-        gq = Math.Int(i / 4); gr = i - gq * 4;
-        show(cg[i], glyph[c], CX + (-164.08 + gq * 130.75 + gr * 22.22) * S, Y(932) + dy, o);
-        show(sg[i], glyph_s[c], dl + (6.5 + (110 + gq * 52 + gr * 12) * 0.142333) * 3.5178 * S, dt + 39.13 * S, o);
-      } else { hide(cg[i]); hide(sg[i]); }
-    }
-    hide(holdtr); hide(holdbar);
-    if (!isok && !isbad) {
-      show(st, st_wait, CX, Y(1005) + dy, o);
-      sp = spin_src.Rotate(tm * 7.0); spin.SetImage(sp); put(spin, sp, CX - st_wait.GetWidth() / 2 + 9 * S, Y(1005) + dy); spin.SetOpacity(o);
-    } else { hide(spin); if (isok) show(st, st_ok, CX, Y(1005) + dy, o); else hide(st); }
-  } else { hide(dev); hide(led_title); hide(led_sub); hide(chip); hide(st); hide(spin); hide(holdtr); hide(holdbar); for (i = 0; i < 12; i++) { hide(cg[i]); hide(sg[i]); } }
 
   # ---- splash: wordmark + progress ----
   if (splash_op > 0.01) {

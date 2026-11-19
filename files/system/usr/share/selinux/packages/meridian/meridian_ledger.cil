@@ -1,0 +1,3 @@
+; Meridian OS: let GDM's PAM worker (xdm_t) talk to the Ledger's hidraw node (usb_device_t) for Ledger sign-in.
+; Without it, SELinux denies the open and GDM sign-in fails closed (the text console password still works).
+(allow xdm_t usb_device_t (chr_file (getattr open read write ioctl)))

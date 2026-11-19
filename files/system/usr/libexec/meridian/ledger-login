@@ -1,0 +1,35 @@
+#!/usr/bin/python3 -IsB
+"""PAM helper for GDM and the lock screen (pam_exec stdout): the Ledger is the only way in there.
+Each printed line becomes a PAM info message that the login screen shows. Exit 0 = signed in."""
+import sys
+
+sys.path.insert(0, "/usr/lib/meridian/python")
+
+
+def say(msg: str) -> None:
+    print(msg, flush=True)
+
+
+def main() -> int:
+    import os
+    user = os.environ.get("PAM_USER", "")
+    try:
+        from meridian_login import LoginError, login
+    except Exception:  # library broken: refuse here, the text console still takes the password
+        say("Ledger sign-in is unavailable. Use Ctrl+Alt+F3 to sign in with your password")
+        return 1
+    try:
+        login(user, say)
+        return 0
+    except LoginError as e:
+        say(str(e))
+    except Exception as e:  # never show a traceback on the login screen
+        say("Ledger sign-in failed")
+        import syslog
+        syslog.openlog("meridian-ledger-login", 0, syslog.LOG_AUTHPRIV)
+        syslog.syslog(syslog.LOG_ERR, f"{type(e).__name__}: {e}")
+    return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

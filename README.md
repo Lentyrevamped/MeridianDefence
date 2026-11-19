@@ -3,19 +3,36 @@
 secureblue (hardened Fedora Atomic, GNOME, open NVIDIA) with Meridian branding and Ledger sign-in, for meridian2.
 Built and signed daily by GitHub Actions with BlueBuild. Nothing here touches upstream security settings.
 
-Ledger scope: exactly two uses. Disk unlock at boot (TPM PIN on the laptop, then "Unlock disk" on the Ledger: hold + Meridian PIN)
-and sign-in (login and lock screen: "Verify identity", hold, no PIN on the Ledger). Admin prompts use the normal password.
-Text contract shown by Plymouth and PAM: `Confirm on your Ledger · code XXXX XXXX XXXX` (the 12-hex code the Ledger shows),
+Ledger scope (19 Nov): sign-in only. Once you enrol, GDM and the lock screen accept ONLY the Ledger (Meridian app,
+"Verify identity", hold, no PIN on the Ledger). Disk unlock stays stock TPM+PIN with the recovery key; the Meridian theme only draws it.
+Text contract shown by PAM: `Confirm on your Ledger · code XXXX XXXX XXXX` (the 12-hex code the Ledger shows),
 `Approved on Ledger`, `Rejected on Ledger`.
 
 ## Never locks you out (hard rule)
 
-- This image changes **no PAM config and no LUKS/crypttab/TPM slot**. Login is stock GDM with your password; disk unlock is the
-  existing TPM+PIN (or LUKS passphrase / recovery key) prompt, only drawn by the Meridian theme.
-- The Ledger screens appear only when the system itself prints "Confirm on your Ledger · code …". Nothing prints that until a
-  Ledger is enrolled, so with no Ledger (or none registered) everything works as before.
-- When the Ledger pieces are built they stay off until an explicit `enroll`, and the password / TPM+PIN / recovery key keep working.
-- Before any rebase of meridian2: VM test of login with password and disk unlock with TPM+PIN, with no Ledger attached.
+- No LUKS/crypttab/TPM change at all. Disk unlock is the existing TPM+PIN (or recovery key) prompt.
+- Ledger sign-in is **off until `run0 meridian-ledger enroll`**. Without an enrolment file the GDM stack goes straight to the
+  stock password, so installing the image changes nothing about logging in.
+- Only `/etc/pam.d/gdm-password` (GDM + lock screen) gets the Ledger step. Text consoles (`login`), sudo/run0 and polkit keep
+  the password, and the build fails if any of those is touched.
+- Rescue (lost or broken Ledger): **Ctrl+Alt+F3**, log in with your password, `run0 meridian-ledger disable`, back to Ctrl+Alt+F1/F2.
+- Any error in the Ledger pieces fails closed at GDM only (message says to use Ctrl+Alt+F3); it never affects the console.
+- Before any rebase of meridian2: VM test with no Ledger attached (docs/VM-TEST.md).
+
+## Ledger sign-in
+
+| Command | What it does |
+|---|---|
+| `meridian-ledger status` | on/off, key fingerprint |
+| `run0 meridian-ledger enroll` | approve the key on the Ledger, confirm enrolment, one test sign-in, then GDM is Ledger-only |
+| `meridian-ledger test` | one sign-in on the Ledger, changes nothing |
+| `run0 meridian-ledger disable` | password at GDM again |
+
+How it works: PAM `pam_exec` runs `/usr/libexec/meridian/ledger-login`, which sends a fresh 32-byte nonce request; the Ledger
+signs `SHA256("MERIDIAN-AUTH-V1" || request)` and the signature is checked against the key in `/etc/meridian/ledger/<user>.json`
+(root-owned, not group/world writable, else refused). The device's answer alone is never trusted. A small SELinux rule lets GDM
+(xdm_t) open the Ledger's hidraw node. Don't register a computer on the Ledger (registered-computers mode refuses these requests).
+Since no password is typed at GDM, the GNOME keyring asks for it once after sign-in.
 
 ## Daily driver (meridian2, from the 18 Nov setup record)
 
@@ -37,8 +54,9 @@ Text contract shown by Plymouth and PAM: `Confirm on your Ledger · code XXXX XX
 |---|---|---|---|
 | "Meridian OS" name (About page, boot menu) | `/usr/lib/os-release` NAME/PRETTY_NAME/LOGO, ID kept | STABLE | n/a |
 | Logos, wallpaper, lock screen, login logo, dark + slate accent | icons + gschema override | STABLE | users can still change them |
-| Boot splash, disk PIN screen, Ledger step | Plymouth script theme in the initramfs | STABLE (Plymouth script API is years old) | build keeps the stock theme |
+| Boot splash, disk PIN screen (stock TPM+PIN unlock) | Plymouth script theme in the initramfs | STABLE (Plymouth script API is years old) | build keeps the stock theme |
 | Tighter corners in apps (incl. Flatpaks) | per-user `gtk.css`, copied only if the user has none | STABLE | GTK ignores unknown rules = stock look |
+| Ledger-only sign-in (after enrol) | `pam_exec` lines at the top of gdm-password | STABLE (PAM) | build leaves gdm-password stock |
 | Fancy Ledger login / lock screen UI | GNOME Shell extension | FRAGILE | only enabled when it declares the image's GNOME version, else stock UI; Ledger prompt still works as text |
 | Shell corners (Quick Settings, menus) | would need a shell theme | FRAGILE, not done | n/a |
 

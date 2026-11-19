@@ -1,0 +1,10 @@
+#!/bin/sh
+# PAM gate (gdm-password only): exit 0 = this user has a Ledger enrolled, so GDM asks the Ledger instead of the
+# password. Anything else = stock password sign-in. No enrolment file, no change: nobody can be locked out by
+# installing the image.
+case "${PAM_USER:-}" in
+  ""|*[!a-z0-9_-]*|-*) exit 1 ;;
+esac
+f="/etc/meridian/ledger/$PAM_USER.json"
+[ -f "$f" ] && [ ! -L "$f" ] && [ "$(stat -c %u "$f")" = 0 ] || exit 1
+exit 0
