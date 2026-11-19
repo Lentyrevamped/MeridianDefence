@@ -32,6 +32,15 @@ const EASE_IN = Clutter.AnimationMode.EASE_OUT_CUBIC;     // ~cubic-bezier(.2,0,
 const MARK = '/usr/share/meridian/mark.svg';
 const KEEP_AWAKE_STATE = () => GLib.build_filenamev([GLib.get_user_state_dir(), 'meridian-keepawake', 'saved']);
 
+function imageStatus() {
+    try {
+        const [, raw] = GLib.file_get_contents('/usr/lib/os-release');
+        const m = new TextDecoder().decode(raw).match(/^MERIDIAN_IMAGE_BUILT="?([^"\n]+)"?/m);
+        if (m) return `Meridian OS · signed image built ${GLib.DateTime.new_from_iso8601(m[1].replace(/Z$/, ':00Z'), null)?.to_local().format('%-d %b %Y, %H:%M') ?? m[1]}`;
+    } catch (e) {}
+    return 'Meridian OS';
+}
+
 let warned = false;
 const safe = (fn, fallback) => (...a) => { try { return fn(...a); } catch (e) { if (!warned) { warned = true; console.warn(`[meridian-shell] ${e}\n${e.stack}`); } return fallback?.(...a); } };
 const anim = () => St.Settings.get().enable_animations;
@@ -338,18 +347,19 @@ class Taskbar {
         // tray (the stock quick settings indicator, stacked) + clock
         this._tray = new St.BoxLayout({orientation: V, style_class: 'meridian-tb-tray', x_align: Clutter.ActorAlign.CENTER});
         this.actor.add_child(this._tray);
-        this._clockBtn = new St.Button({style_class: 'meridian-tb-clock', can_focus: true, x_align: Clutter.ActorAlign.CENTER});
+        this.actor.add_child(new St.Widget({style_class: 'meridian-tb-divider', x_align: Clutter.ActorAlign.CENTER}));
+        this._clockBtn = new St.Button({style_class: 'meridian-tb-clock', can_focus: true, x_expand: true});
         const cb = new St.BoxLayout({orientation: V, x_align: Clutter.ActorAlign.CENTER});
-        this._dot = new St.Widget({style_class: 'meridian-tb-dot', x_align: Clutter.ActorAlign.CENTER});
         this._time = new St.Label({style_class: 'meridian-tb-time', x_align: Clutter.ActorAlign.CENTER});
         this._date = new St.Label({style_class: 'meridian-tb-date', x_align: Clutter.ActorAlign.CENTER});
-        cb.add_child(this._dot); cb.add_child(this._time); cb.add_child(this._date);
+        cb.add_child(this._time); cb.add_child(this._date);
         this._clockBtn.set_child(cb);
         this.actor.add_child(this._clockBtn);
         this._wall = new GnomeDesktop.WallClock();
         this._wall.connectObject('notify::clock', () => this._syncClock(), this);
         this._syncClock();
-        this._tip.attach(this._clockBtn, () => GLib.DateTime.new_now_local().format('%A, %-d %B %Y'));
+        // Build status lives in the tooltip (the image build stamp from os-release; a placeholder for live build status).
+        this._tip.attach(this._clockBtn, () => `${GLib.DateTime.new_now_local().format('%A, %-d %B %Y')}\n${imageStatus()}`);
 
         // menus
         this._startMenu = new StartMenu(this._mark);
