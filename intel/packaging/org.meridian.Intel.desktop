@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Meridian Intel
+GenericName=Intelligence workstation
+Comment=Live map, aircraft, ships, conflicts, markets, analyst and OSINT
+Exec=@BIN@/meridian-intel launch
+Icon=@ICON@
+Terminal=false
+Categories=Network;Office;Finance;
+StartupWMClass=MeridianIntel
+Keywords=map;ships;aircraft;markets;osint;bloomberg;

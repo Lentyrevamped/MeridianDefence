@@ -1,0 +1,22 @@
+/* Meridian corporate tokens (Gotham references), shared by Meridian OS and Meridian Intel. Revised 19 Nov 14:10 UTC. */
+:root{
+  /* navy-slate surfaces */
+  --m-bg0:#0E141B;  /* screen; OS screens add a soft radial lift #141D27 at centre */
+  --m-bg1:#18212C;  /* card / panel */
+  --m-bg2:#1D2834;  /* panel header (40px) */
+  --m-bg3:#22303F;  /* selected / "on" tile */
+  --m-sunk:#101820; /* inputs, code box */
+  --m-line:#2A3846; --m-line-soft:#222E3B; --m-line-field:#34465A;
+  --m-t1:#E1E7EE; --m-t2:#8B9AAB; --m-t3:#5E6D7E; --m-t-soft:#B7C3D0;
+  /* actions */
+  --m-primary:#2F6FD0; --m-focus:#4C90F0; --m-link:#6AA6F8; --m-btn-off:#253242; --m-success-btn:#238551;
+  /* status */
+  --m-green:#32A467; --m-green-t:#3FBF7F; --m-amber:#E8A33D; --m-red:#E5484D; --m-red-t:#F07A7E;
+  /* top bar: purple; "SECURED" chip (rgba(255,255,255,.14), shield icon) sits just LEFT of the centred clock */
+  --m-band:#4E2A9A; --m-band-t:#F1ECFF;
+  /* shape */
+  --m-r-panel:0px; --m-r-ctl:2px; --m-shadow:0 12px 32px rgba(0,0,0,.35);
+  /* type: Inter title case (no all-caps labels except the SECURED chip); mono only for codes */
+  --m-sans:Inter,system-ui,sans-serif; --m-mono:"JetBrains Mono",ui-monospace,monospace;
+  /* sizes: body 12.5/18, header 13/600, field label 11.5/500 --m-t2, rows 30px, controls 32-34px, status bar 26px */
+}
