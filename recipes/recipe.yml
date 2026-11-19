@@ -33,3 +33,7 @@ modules:
       - 90-verify.sh            # build fails loudly if a stable piece is missing; fragile pieces only warn
 
   - type: signing                # signs the image (cosign) and adds our key to the image's container policy
+
+  - type: script                 # after signing: merge our key into secureblue's own policy (keeps default reject)
+    scripts:
+      - 95-container-policy.sh
