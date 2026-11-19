@@ -98,3 +98,23 @@ StEntry:focus, .search-entry:focus, .login-dialog-prompt-entry:focus { border-co
 .calendar-month-label, .calendar-day-heading, .calendar-week-number, .calendar-month-header .pager-button, .calendar-month-header { border-radius: 0; background-color: transparent; }
 .calendar-day-heading { color: #8B9AAB; font-weight: 600; }
 .calendar-month-label { font-weight: 600; }
+
+/* Side dock (Dash to Dock): flat navy rail, square tiles, hairline edge toward the desktop */
+#dashtodockContainer #dash { padding: 0; }
+#dashtodockContainer .dash-background,
+#dashtodockContainer.fixed .dash-background { border-radius: 0; margin: 0; border: 0; background-color: #141C25; }
+#dashtodockContainer.left .dash-background { border-right: 1px solid #2A3846; }
+#dashtodockContainer.right .dash-background { border-left: 1px solid #2A3846; }
+#dashtodockContainer.bottom .dash-background { border-top: 1px solid #2A3846; }
+#dashtodockContainer .dash-item-container > StButton { padding: 2px 0; }
+#dashtodockContainer .overview-tile,
+#dashtodockContainer .show-apps,
+#dashtodockContainer .app-well-app .overview-icon,
+#dashtodockContainer .show-apps .overview-icon { border-radius: 0; padding: 6px; }
+#dashtodockContainer .overview-tile:hover .overview-icon,
+#dashtodockContainer .show-apps:hover .overview-icon { background-color: rgba(255,255,255,.08); }
+#dashtodockContainer .app-well-app.focused .overview-icon,
+#dashtodockContainer .overview-tile.focused .overview-icon { background-color: rgba(76,144,240,.18); }
+#dashtodockContainer .show-apps:checked .overview-icon { background-color: rgba(76,144,240,.28); }
+#dashtodockContainer .dash-separator { background-color: #2A3846; }
+#dashtodockContainer .dash-label, .dash-label { border-radius: 0; background-color: #1C2733; color: #E6EDF3; border: 1px solid #2A3846; }

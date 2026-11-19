@@ -27,6 +27,7 @@ modules:
       - 10-os-release.sh        # "Meridian OS" name (About page, boot menu entries), keeps ID=secureblue
       - 20-plymouth.sh          # boot splash + disk PIN prompt (stock TPM+PIN unlock), initramfs rebuilt; falls back to stock theme on any error
       - 30-gnome-extension.sh   # Ledger sign-in card + corporate shell style; each enabled only if it declares the image's GNOME version
+      - 31-dock.sh               # side dock (Dash to Dock), fixed left, full height, square navy; stock dash if unavailable
       - 40-user-style.sh        # corporate GTK style per user (navy, square, blue accent), Flatpaks included (read-only)
       - 50-daily.sh             # daily driver: apps on first login, Drive sync timer, keep-screen-on, Brave policy
       - 60-ledger-login.sh      # Ledger-only GDM/lock screen sign-in, active only after `meridian-ledger enroll`; password stays at the TTY
