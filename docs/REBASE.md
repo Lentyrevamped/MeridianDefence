@@ -7,7 +7,7 @@ enrolment, Ctrl+Alt+F3 rescue, `meridian-ledger disable`, rollback. All passed (
 ## Before
 - `rpm-ostree status`: note the current image line (secureblue silverblue-nvidia-open-hardened).
 - `run0 ostree admin pin 0`: keeps today's secureblue deployment in the boot menu for good (undo: `ostree admin pin -u 0`).
-- Have the BitLocker-style paper backup ready: the LUKS recovery key.
+- Have the LUKS recovery key (paper) at hand.
 
 ## Commands (two reboots)
 1. `run0 rpm-ostree rebase ostree-unverified-registry:ghcr.io/lentyrevamped/meridian-os:latest`, then `systemctl reboot`.
