@@ -2,7 +2,7 @@
 import { api, esc, safeUrl, ago, toast } from "./api.js";
 
 const MOD_LABEL = { profile: "Profile", news: "News", usernames: "Usernames", filings: "Filings", breach: "Breaches", providers: "Providers" };
-const MOD_NAME = { profile: "Profile", news: "News mentions", usernames: "Username sweep", filings: "SEC filings", breach: "Breach exposure", providers: "Licensed providers" };
+const MOD_NAME = { "link-search": "Entity search", profile: "Profile", news: "News mentions", usernames: "Username sweep", filings: "SEC filings", breach: "Breach exposure", providers: "Licensed providers" };
 const KIND = { public: "Public figure", company: "Company", private: "Private" };
 const MOD_HINT = {
   profile: "Wikidata + Wikipedia profile, official accounts", news: "News mentions, last 3 months (defaults to the name)",
@@ -128,8 +128,24 @@ export class Osint {
     return `<pre>${esc(JSON.stringify(d, null, 2))}</pre>`;
   }
 
+  summary(d) {
+    const c = this.case, el = document.getElementById("inv-sum"); if (!el || !c) return;
+    const E = d.entries, ok = E.filter((e) => e.outcome === "ok").length, ref = E.filter((e) => e.outcome.startsWith("refused")).length;
+    const kinds = (k) => c.subjects.filter((s) => s.kind === k).length;
+    const dt = (t) => (t ? new Date(t * 1000).toISOString().slice(0, 16).replace("T", " ") + " UTC" : "—");
+    const byMod = {}, bySub = {}; E.forEach((e) => { byMod[e.module] = (byMod[e.module] || 0) + 1; bySub[e.subject] = (bySub[e.subject] || 0) + 1; });
+    const mx = Math.max(1, ...Object.values(byMod));
+    const kv = (rows) => `<dl class="kv">${rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("")}</dl>`;
+    el.innerHTML = `<div class="sect">Case</div>` + kv([["Reference", `<span class="mono">${esc(c.id)}</span>`], ["Status", c.closed ? `Closed ${dt(c.closed)}` : '<span class="ok">Open</span>'], ["Opened", dt(c.created)], ["Client", esc(c.client || "—")], ["Basis", esc(this.meta.bases[c.basis] || c.basis)]]) +
+      `<div class="sect">Subjects</div>` + kv([["Public figures", kinds("public")], ["Companies", kinds("company")], ["Private individuals", kinds("private")]]) +
+      `<div class="sect">Activity</div>` + kv([["Lookups", E.length], ["Completed", `<span class="ok">${ok}</span>`], ["Refused by scope", ref ? `<span class="bad">${ref}</span>` : "0"], ["Last activity", dt(E[0]?.ts)], ["Audit chain", d.verify.ok ? '<span class="ok">Verified</span>' : '<span class="bad">Broken</span>']]) +
+      `<div class="sect">Lookups by module</div>` + Object.entries(byMod).sort((a, b) => b[1] - a[1]).map(([m, n]) => `<div class="mrow"><span>${esc(MOD_NAME[m] || m)}</span><span class="barv"><i style="width:${(n / mx) * 100}%"></i></span><em>${n}</em></div>`).join("") +
+      `<div class="sect">Lookups by subject</div>` + Object.entries(bySub).sort((a, b) => b[1] - a[1]).map(([s, n]) => `<div class="mrow"><span>${esc(s)}</span><span></span><em>${n}</em></div>`).join("");
+  }
+
   async loadAudit() {
     const d = await api(`/api/osint/audit?case=${encodeURIComponent(this.case.id)}`);
+    this.summary(d);
     document.getElementById("vfy").innerHTML = d.verify.ok ? `<span class="vfy">Chain verified · ${d.verify.rows} entries</span>` : `<span class="vfy bad">Chain broken at entry ${d.verify.break_at}</span>`;
     document.getElementById("audit").innerHTML = `<table class="audit"><tr><th>#</th><th>Time (UTC)</th><th>Subject</th><th>Module</th><th>Query</th><th>Outcome</th><th>Hash</th></tr>` +
       d.entries.map((e) => `<tr><td>${String(e.seq).padStart(5, "0")}</td><td>${new Date(e.ts * 1000).toISOString().slice(5, 19).replace("T", " ")}</td><td>${esc(e.subject)} <span class="dim">${esc(KIND[e.kind] || e.kind)}</span></td><td>${esc(MOD_LABEL[e.module] || e.module)}</td><td>${esc(e.query)}</td><td class="${e.outcome === "ok" ? "ok" : e.outcome.startsWith("refused") ? "bad" : ""}">${esc(e.outcome)}${e.results ? ` · ${e.results}` : ""}</td><td class="h">${esc(e.hash.slice(0, 12))}</td></tr>`).join("") + `</table>`;

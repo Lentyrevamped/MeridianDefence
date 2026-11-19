@@ -404,3 +404,46 @@ th{font-size:11.5px;font-weight:500;color:var(--m-t2)}
 .wl td{height:40px}
 #demo-badge{display:none!important}
 .mgrid .kv{grid-template-columns:210px 1fr}.mgrid dt{font-size:11.5px!important;color:var(--m-t1)!important}
+/* KPI strip (Operations) */
+.kpis{flex:none;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));height:62px;background:var(--m-bg1);border-bottom:1px solid var(--m-line)}
+.kpi{display:flex;flex-direction:column;justify-content:center;gap:3px;padding:0 12px;border-right:1px solid var(--m-line);min-width:0;position:relative}
+.kpi:last-child{border-right:0}
+.kpi span{font:500 11px/1 var(--m-sans);color:var(--m-t2);white-space:nowrap}
+.kpi b{font:600 17px/1.1 var(--m-sans);color:var(--m-t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpi b em{font:500 11px var(--m-mono);font-style:normal;margin-left:4px;color:var(--m-t3)}
+.kpi small{font-size:11px;color:var(--m-t3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpi.alert::before,.kpi.warn::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--m-red)}
+.kpi.warn::before{background:var(--m-amber)}
+.kpi.alert b{color:var(--m-red-t)}
+.cop .mtools.l{top:70px}
+.hs{width:100%;border-collapse:collapse}.hs td{height:30px;padding:0 8px;border-bottom:1px solid var(--m-line-soft);white-space:nowrap}
+.hs td:first-child{max-width:130px;overflow:hidden;text-overflow:ellipsis;padding-left:14px}.hs th:first-child{padding-left:14px}
+.hs tr[data-i]{cursor:pointer}.hs tr[data-i]:hover{background:var(--m-bg3)}
+.hs .barv{display:block;width:56px;height:6px;background:var(--m-line)}.hs .barv i{display:block;height:100%;background:var(--m-focus)}
+.r{text-align:right}
+.note{padding:10px 14px;color:var(--m-t3);font-size:11.5px}
+/* Markets density */
+.movers{flex:none;border-top:1px solid var(--m-line);background:var(--m-bg1)}
+.mv{display:grid;grid-template-columns:84px 1fr auto;gap:8px;align-items:center;height:30px;padding:0 14px;cursor:pointer;border-top:1px solid var(--m-line-soft)}
+.mv:hover{background:var(--m-bg3)}.mv b{font:500 11.5px var(--m-mono)}.mv span{color:var(--m-t3);font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mv em{font:400 11.5px var(--m-mono);font-style:normal}
+.breadth{display:flex;gap:12px;padding:0 14px 6px;font-size:11.5px;color:var(--m-t2)}
+.bbar{display:flex;height:4px;margin:0 14px 6px;background:var(--m-line)}.bbar i{display:block;height:100%}.bbar i.up{background:var(--m-green)}.bbar i.dn{background:var(--m-red);margin-left:auto}
+.wl{flex:1 1 auto;min-height:0}
+.mk-main{position:relative}
+.clegend{position:absolute;top:86px;left:12px;display:flex;gap:14px;font-size:11.5px;color:var(--m-t2);z-index:3;pointer-events:none;background:rgba(14,20,27,.7);padding:3px 6px}
+.clegend:empty{display:none}
+.clegend i{display:inline-block;width:10px;height:2px;margin-right:6px;vertical-align:middle}
+#q-stats .kv dd{text-align:right;font:400 12px var(--m-mono)}
+/* Analyst context + case summary */
+.view.anl.on{grid-template-columns:var(--lp) 1fr 380px}
+.view.inv.on{grid-template-columns:var(--lp) 1fr var(--rp)}
+.cx{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;min-height:30px;padding:4px 14px;border-top:1px solid var(--m-line-soft)}
+.cx i{width:7px;height:7px;border-radius:50%;background:var(--m-amber)}.cx i.ok{background:var(--m-green)}
+.cx span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cx em{font-style:normal;font-size:11.5px;color:var(--m-t2);white-space:nowrap}
+.cx.q{grid-template-columns:1fr auto;cursor:pointer}.cx.q:hover{background:var(--m-bg3)}
+.cx.sug span{white-space:normal;color:var(--m-link)}
+.mrow{display:grid;grid-template-columns:1fr 70px 28px;gap:8px;align-items:center;height:28px;padding:0 14px;border-top:1px solid var(--m-line-soft)}
+.mrow span:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mrow em{font:400 11.5px var(--m-mono);font-style:normal;text-align:right;color:var(--m-t2)}
+.mrow .barv{display:block;height:6px;background:var(--m-line)}.mrow .barv i{display:block;height:100%;background:var(--m-focus)}
+.tl-legend{display:grid!important;grid-template-columns:1fr 1fr;column-gap:12px;align-content:start}
+.hs td,.hs th{padding:0 5px}.hs .barv{width:36px}.hs td:first-child{max-width:118px}

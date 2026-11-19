@@ -54,6 +54,16 @@ export class Markets {
       return `<tr data-i="${i}" class="${it.symbol === this.sym ? "on" : ""}"><td class="s"><b>${esc(it.symbol)}</b><span>${esc(it.label || it.name || "")}</span></td>
       <td><canvas></canvas></td><td class="p">${it.error ? '<span class="dim">n/a</span>' : fmt(it.price)}</td><td class="c ${c.cls}">${it.error ? "" : (c.pct >= 0 ? "+" : "") + c.pct.toFixed(2) + "%"}</td>
       <td class="x" title="Remove">×</td></tr>`; }).join("");
+    const ok = this.items.filter((it) => !it.error && it.prev).map((it) => ({ ...it, pct: chg(it.price, it.prev).pct })).sort((a, b) => b.pct - a.pct);
+    const adv = ok.filter((x) => x.pct > 0).length, dec = ok.filter((x) => x.pct < 0).length, avgc = ok.length ? ok.reduce((a, x) => a + x.pct, 0) / ok.length : 0;
+    const mv = (x) => `<div class="mv" data-s="${esc(x.symbol)}"><b>${esc(x.symbol)}</b><span>${esc(x.label || x.name || "")}</span><em class="${x.pct >= 0 ? "up" : "dn"}">${x.pct >= 0 ? "+" : ""}${x.pct.toFixed(2)}%</em></div>`;
+    const mvEl = document.getElementById("movers");
+    if (mvEl) {
+      mvEl.innerHTML = `<div class="sect">Breadth</div><div class="breadth"><span class="up">${adv} advancing</span><span class="dn">${dec} declining</span><span>Average ${avgc >= 0 ? "+" : ""}${avgc.toFixed(2)}%</span></div>
+        <div class="bbar"><i class="up" style="width:${ok.length ? (adv / ok.length) * 100 : 0}%"></i><i class="dn" style="width:${ok.length ? (dec / ok.length) * 100 : 0}%"></i></div>
+        <div class="sect">Strongest</div>${ok.slice(0, 3).map(mv).join("")}<div class="sect">Weakest</div>${ok.slice(-3).reverse().map(mv).join("")}`;
+      mvEl.querySelectorAll("[data-s]").forEach((d) => d.onclick = () => this.open(d.dataset.s));
+    }
     tb.querySelectorAll("tr").forEach((tr) => { const it = this.items[+tr.dataset.i];
       spark(tr.querySelector("canvas"), it.spark, 46, 20);
       tr.onclick = (e) => { if (e.target.classList.contains("x")) { this.remove(it.symbol); return; } this.open(it.symbol); };
@@ -89,15 +99,38 @@ export class Markets {
         this.series = this.chart.addAreaSeries({ lineColor: upc ? "#32A467" : "#E5484D", lineWidth: 1.5, topColor: upc ? "rgba(50,164,103,.16)" : "rgba(229,72,77,.16)", bottomColor: "rgba(0,0,0,0)", priceLineColor: "#5C6570", priceLineStyle: 2 });
         this.series.setData(h.points.map((p) => ({ time: p.t, value: p.c })));
       }
+      for (const x of this.extra || []) this.chart.removeSeries(x); this.extra = [];
+      const P = h.points, hasVol = P.some((p) => p.v > 0);
+      const sma = (n) => { const o = []; let sum = 0; P.forEach((p, i) => { sum += p.c; if (i >= n) sum -= P[i - n].c; if (i >= n - 1) o.push({ time: p.t, value: sum / n }); }); return o; };
+      const lineOpt = (color) => ({ color, lineWidth: 1, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false });
+      const leg = [];
+      if (P.length > 60) { const a = this.chart.addLineSeries(lineOpt("#8B9AAB")); a.setData(sma(20)); const b = this.chart.addLineSeries(lineOpt("#4C90F0")); b.setData(sma(50)); this.extra.push(a, b); leg.push('<span><i style="background:#8B9AAB"></i>20-period average</span>', '<span><i style="background:#4C90F0"></i>50-period average</span>'); }
+      if (hasVol) {
+        const v = this.chart.addHistogramSeries({ priceScaleId: "vol", priceFormat: { type: "volume" }, lastValueVisible: false, priceLineVisible: false });
+        this.chart.priceScale("vol").applyOptions({ scaleMargins: { top: 0.82, bottom: 0 } });
+        v.setData(P.map((p) => ({ time: p.t, value: p.v, color: p.c >= (p.o ?? p.c) ? "rgba(50,164,103,.35)" : "rgba(229,72,77,.35)" }))); this.extra.push(v);
+        leg.push('<span><i style="background:rgba(139,154,171,.5)"></i>Volume</span>');
+      }
+      this.chart.priceScale("right").applyOptions({ scaleMargins: { top: 0.06, bottom: hasVol ? 0.22 : 0.06 } });
+      document.getElementById("q-legend").innerHTML = leg.join("");
       this.chart.timeScale().fitContent();
       const cl = h.points.map((p) => p.c), hi = Math.max(...cl), lo = Math.min(...cl);
       const first = cl[0], last = cl[cl.length - 1];
       const rets = cl.slice(1).map((v, i) => Math.log(v / cl[i]));
       const sd = Math.sqrt(rets.reduce((a, r) => a + r * r, 0) / Math.max(1, rets.length));
       const per = { "1D": 78 * 252, "5D": 26 * 252, "1M": 7 * 252, "6M": 252, "1Y": 252, "5Y": 52, MAX: 12 }[rng];
-      document.getElementById("q-stats").innerHTML = [["Range change", `${((last / first - 1) * 100).toFixed(2)}%`], ["High", fmt(hi)], ["Low", fmt(lo)],
-        ["From high", `${((last / hi - 1) * 100).toFixed(2)}%`], ["Ann. volatility", `${(sd * Math.sqrt(per) * 100).toFixed(1)}%`], ["Points", h.points.length.toLocaleString()]]
-        .map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("") + `<dt>First</dt><dd>${fmt(first)}</dd><dt>Last</dt><dd>${fmt(last)}</dd><dt>Source</dt><dd>${esc(h.src)}</dd><dt>Currency</dt><dd>${esc(h.currency || "—")}</dd>`;
+      const P2 = h.points, lastT = P2.at(-1).t, pct = (x) => (x == null ? '<span class="dim">—</span>' : `<span class="${x >= 0 ? "up" : "dn"}">${x >= 0 ? "+" : ""}${x.toFixed(2)}%</span>`);
+      const back = (secs) => { const t = lastT - secs; if (P2[0].t > t + secs * 0.05) return null; const p = P2.find((x) => x.t >= t); return p ? (last / p.c - 1) * 100 : null; };
+      const y0 = Date.UTC(new Date(lastT * 1000).getUTCFullYear(), 0, 1) / 1000;
+      const D = 86400, perf = [["1 day", D], ["1 week", 7 * D], ["1 month", 30 * D], ["3 months", 91 * D], ["6 months", 182 * D], ["Year to date", lastT - y0], ["1 year", 365 * D], ["3 years", 1095 * D], ["5 years", 1826 * D]];
+      let peak = cl[0], mdd = 0, ddStart = 0, ddLen = 0, cur = 0; cl.forEach((v, i) => { if (v > peak) { peak = v; cur = 0; } else cur++; mdd = Math.min(mdd, v / peak - 1); ddLen = Math.max(ddLen, cur); });
+      const pr = cl.slice(1).map((v, i) => (v / cl[i] - 1) * 100), ups = pr.filter((x) => x > 0).length;
+      const sec = (t, rows) => `<div class="sect">${t}</div><dl class="kv">${rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("")}</dl>`;
+      document.getElementById("q-stats").innerHTML =
+        sec("Range", [["Change", pct((last / first - 1) * 100)], ["High", fmt(hi)], ["Low", fmt(lo)], ["From high", pct((last / hi - 1) * 100)], ["From low", pct((last / lo - 1) * 100)], ["First", fmt(first)], ["Last", fmt(last)]]) +
+        sec("Performance", perf.map(([k, sx]) => [k, pct(back(sx))])) +
+        sec("Risk", [["Annualised volatility", `${(sd * Math.sqrt(per) * 100).toFixed(1)}%`], ["Maximum drawdown", pct(mdd * 100)], ["Longest drawdown", `${ddLen.toLocaleString()} periods`], ["Up periods", `${pr.length ? Math.round((ups / pr.length) * 100) : 0}%`], ["Best period", pct(Math.max(...pr))], ["Worst period", pct(Math.min(...pr))]]) +
+        sec("Data", [["Points", h.points.length.toLocaleString()], ["Source", esc(h.src)], ["Exchange", esc(h.exchange || "—")], ["Currency", esc(h.currency || "—")]]);
     } catch (e) {
       document.getElementById("q-name").textContent = `No data: ${e.message}`;
       document.getElementById("q-px").textContent = "—"; document.getElementById("q-chg").textContent = "";

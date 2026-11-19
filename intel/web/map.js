@@ -37,7 +37,7 @@ const airCls = (a) => (["7500", "7600", "7700"].includes(a.sq) ? "emg" : a.gnd ?
 export class WorldMap {
   constructor(el, hooks) {
     this.hooks = hooks; this.base = "dark"; this.data = { ac: [], ships: [], events: [] };
-    this.vis = { ac: true, ships: true, events: true, labels: true, mono: false, terrain3d: false, milfeed: false };
+    this.vis = { ac: true, ships: true, events: true, labels: true, mono: false, terrain3d: false, milfeed: false, grid: true };
     this.f = { air: new Set(AIR.map((x) => x[0])), ship: new Set(SHIPS.map((x) => x[0])), cat: new Set(CATS.map((x) => x[0])) };
     this.hist = []; this.closed = new Set(["OVL"]); this.rings = [];
     this.map = new maplibregl.Map({
@@ -68,6 +68,9 @@ export class WorldMap {
     const countries = await fetch("/static/vendor/countries-110m.geojson").then((r) => r.json());
     m.addSource("countries", { type: "geojson", data: countries });
     for (const id of ["ac", "ships", "events", "rings"]) m.addSource(id, { type: "geojson", data: { type: "FeatureCollection", features: [] } });
+    const grid = []; for (let x = -180; x <= 180; x += 15) grid.push({ type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: [[x, -85], [x, 0], [x, 85]] } });
+    for (let y = -75; y <= 75; y += 15) grid.push({ type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: Array.from({ length: 25 }, (_, i) => [-180 + i * 15, y]) } });
+    m.addSource("grid", { type: "geojson", data: { type: "FeatureCollection", features: grid } });
     this.setBase(this.base);
     this._layers();
     this.refresh(true);
@@ -75,14 +78,14 @@ export class WorldMap {
     setInterval(() => this.loadEvents(), 300000);
     setInterval(() => this.drawTimeline(), 1000);
     new ResizeObserver(() => this.drawTimeline()).observe(document.getElementById("tl-canvas"));
-    document.getElementById("d-back").onclick = () => this.showFeed();
+    document.getElementById("d-back").onclick = () => this.showFeed(this._feedTab || "Events");
   }
 
   setBase(name) {
     const m = this.map, b = BASEMAPS[name]; this.base = name;
     for (const id of ["base", "labels", "hill", "land", "borders"]) if (m.getLayer(id)) m.removeLayer(id);
     for (const id of ["base", "labels"]) if (m.getSource(id)) m.removeSource(id);
-    const before = m.getLayer("rings") ? "rings" : undefined;
+    const before = m.getLayer("grid") ? "grid" : m.getLayer("rings") ? "rings" : undefined;
     if (b.tiles) {
       m.addSource("base", { type: "raster", tiles: b.tiles, tileSize: 256, maxzoom: b.max });
       m.addLayer({ id: "base", type: "raster", source: "base", paint: { "raster-saturation": this.vis.mono || name === "dark" ? -1 : -0.15, "raster-brightness-max": name === "dark" ? 0.9 : 0.85, "raster-fade-duration": 150 } }, before);
@@ -103,6 +106,7 @@ export class WorldMap {
 
   _layers() {
     const m = this.map;
+    m.addLayer({ id: "grid", type: "line", source: "grid", layout: { visibility: this.vis.grid ? "visible" : "none" }, paint: { "line-color": "#4C90F0", "line-opacity": 0.12, "line-width": 0.6 } });
     m.addLayer({ id: "rings", type: "line", source: "rings", paint: { "line-color": C.red, "line-width": 1.2, "line-dasharray": [4, 3] } });
     m.addLayer({ id: "rings-fill", type: "fill", source: "rings", paint: { "fill-color": C.red, "fill-opacity": 0.06 } });
     m.addLayer({ id: "events-halo", type: "circle", source: "events", filter: ["==", ["get", "cat"], "mass violence"],
@@ -165,7 +169,7 @@ export class WorldMap {
         CATS.map(([k, c, col]) => row("cat", k, c, c, ev[k] || 0, max(ev), this.f.cat.has(k), col)).join("") +
         `<div class="sect" style="padding-left:24px">Top locations</div>` + topPlaces.map(([p, n]) => row("place", p, "", p, n, pmax, true, null)).join("")) +
       grp("BASE", "Basemap", "", null, null, Object.entries(BASEMAPS).map(([k, b]) => row("base", k, b.code, b.name, null, 0, this.base === k, null, true)).join("")) +
-      grp("OVL", "Overlays", "", null, null, [["labels", "LBL", "Labels and borders"], ["mono", "MNO", "Mono imagery"], ["terrain3d", "3DT", "3D terrain"], ["milfeed", "MILG", "Global military aircraft feed"]]
+      grp("OVL", "Overlays", "", null, null, [["labels", "LBL", "Labels and borders"], ["grid", "GRD", "Coordinate grid (15°)"], ["mono", "MNO", "Mono imagery"], ["terrain3d", "3DT", "3D terrain"], ["milfeed", "MILG", "Global military aircraft feed"]]
         .map(([k, c, n]) => row("ovl", k, c, n, null, 0, this.vis[k], null)).join("") + (this.rings.length ? row("rings", "clear", "RNG", `${this.rings.length} range rings (click to clear)`, null, 0, true, C.red) : ""));
     el.querySelectorAll(".gh").forEach((h) => h.onclick = (e) => { if (e.target.closest("[data-k]")) return; const g = h.parentElement.dataset.g; this.closed.has(g) ? this.closed.delete(g) : this.closed.add(g); this.renderTree(); });
     el.querySelectorAll("[data-k]").forEach((r) => r.onclick = (e) => { e.stopPropagation(); this.treeClick(r.dataset.k, r.dataset.v); });
@@ -181,6 +185,7 @@ export class WorldMap {
     else if (k === "ovl") {
       this.vis[v] = !this.vis[v];
       if (v === "labels" || v === "mono") { this.setBase(this.base); return; }
+      if (v === "grid") this.map.setLayoutProperty("grid", "visibility", this.vis.grid ? "visible" : "none");
       if (v === "terrain3d") { if (this.vis[v]) { this.map.setTerrain({ source: "dem", exaggeration: 1.3 }); this.map.easeTo({ pitch: 60 }); } else { this.map.setTerrain(null); this.map.easeTo({ pitch: 0 }); } }
       if (v === "milfeed") this.refresh(true);
     }
@@ -225,8 +230,8 @@ export class WorldMap {
     await Promise.all(tasks);
     this.hist.push({ t: Date.now(), ac: this.data.ac.length, ships: this.data.ships.length });
     this.hist = this.hist.filter((h) => Date.now() - h.t < 3600e3);
-    this.renderTree(); this.hooks.counts(this.data);
-    if (this._detail) this._refreshDetail();
+    this.renderTree(); this.hooks.counts(this.data); this.renderKpis();
+    if (this._detail) this._refreshDetail(); else if (this._feedTab && this._feedTab !== "Events") this.showFeed(this._feedTab);
   }
 
   async loadEvents() {
@@ -234,7 +239,7 @@ export class WorldMap {
       const d = await api("/api/events"); this.data.events = d.events; this._set("events", d.events);
       this.hooks.status("evt", d.events.length > 0, d.err || "");
       if (!this._detail) this.showFeed();
-      this.renderTree();
+      this.renderTree(); this.renderKpis();
     } catch (e) { this.hooks.status("evt", false, e.message); }
   }
 
@@ -252,12 +257,76 @@ export class WorldMap {
   }
 
   // ---------- inspector ----------
-  showFeed() {
-    this._detail = null; this.map.setFilter("sel", ["==", ["get", "id"], ""]);
-    document.getElementById("d-type").textContent = "Feed"; document.getElementById("d-title").textContent = "Events, last 60 min";
-    document.getElementById("d-back").hidden = true; document.getElementById("d-tabs").hidden = true;
-    const evs = [...this.data.events].filter((e) => this.f.cat.has(e.cat)).sort((a, b) => b.mentions - a.mentions).slice(0, 200);
+  // derived views shared by the KPI strip, hotspots tab and analyst context
+  hotspots(n = 40) {
+    const by = {};
+    for (const e of this.data.events) {
+      const k = e.place || e.cc; const h = (by[k] ||= { place: k, lat: 0, lon: 0, n: 0, viol: 0, tone: 0, men: 0, last: "" });
+      h.n++; h.lat += +e.lat; h.lon += +e.lon; h.tone += +e.tone; h.men += +e.mentions; if (["assault", "fighting", "mass violence"].includes(e.cat)) h.viol++; if (String(e.ts) > h.last) h.last = String(e.ts);
+    }
+    const out = Object.values(by).map((h) => ({ ...h, lat: h.lat / h.n, lon: h.lon / h.n, tone: h.tone / h.n }));
+    for (const h of out) {
+      const near = (arr) => arr.reduce((c, t) => c + (Math.abs(t.lat - h.lat) < 2.5 && Math.abs(t.lon - h.lon) < 3.5 ? 1 : 0), 0);
+      h.air = near(this.data.ac); h.mil = near(this.data.ac.filter((a) => a.k === "mil")); h.sea = near(this.data.ships);
+      h.score = h.n + 2 * h.viol + h.mil * 1.5 + h.men / 40;
+    }
+    return out.sort((a, b) => b.score - a.score).slice(0, n);
+  }
+
+  renderKpis() {
+    const el = document.getElementById("kpis"); if (!el) return;
+    const ac = this.data.ac, sh = this.data.ships, ev = this.data.events;
+    const mil = ac.filter((a) => a.k === "mil").length, emg = ac.filter((a) => a.k === "emg").length, gnd = ac.filter((a) => a.k === "gnd").length;
+    const tnk = sh.filter((s) => s.cls === "tanker").length, cgo = sh.filter((s) => s.cls === "cargo").length, msh = sh.filter((s) => s.cls === "military").length;
+    const viol = ev.filter((e) => ["assault", "fighting", "mass violence"].includes(e.cat)).length;
+    const tone = ev.length ? ev.reduce((a, e) => a + +e.tone, 0) / ev.length : 0;
+    const top = this.hotspots(3);
+    const prev = this.hist.length > 6 ? this.hist[this.hist.length - 7] : this.hist[0];
+    const d = (k, v) => { if (!prev) return ""; const x = v - prev[k]; return x ? `<em class="${x > 0 ? "up" : "dn"}">${x > 0 ? "+" : ""}${x}</em>` : `<em>±0</em>`; };
+    const n = (v) => Number(v).toLocaleString();
+    const tile = (label, big, sub, cls = "") => `<div class="kpi ${cls}"><span>${label}</span><b>${big}</b><small>${sub}</small></div>`;
+    el.innerHTML =
+      tile("Aircraft in view", `${n(ac.length)} ${d("ac", ac.length)}`, `${n(mil)} military`) +
+      tile("Emergency squawks", n(emg), emg ? "7500 / 7600 / 7700 active" : "None active", emg ? "alert" : "") +
+      tile("Vessels in view", `${n(sh.length)} ${d("ships", sh.length)}`, `${n(cgo)} cargo · ${n(tnk)} tanker`) +
+      tile("Events, 60 min", n(ev.length), `${n(viol)} violent (${ev.length ? Math.round((viol / ev.length) * 100) : 0}%)`, viol / Math.max(1, ev.length) > 0.4 ? "warn" : "") +
+      tile("Average tone", tone.toFixed(1), tone < -5 ? "Strongly negative" : tone < -2 ? "Negative" : "Neutral") +
+      tile("Top hotspots", esc(top[0]?.place?.split(",")[0] || "None"), esc(top.slice(1).map((h) => h.place.split(",")[0]).join(" · ") || "—")) +
+      tile("Map", `Zoom ${this.map.getZoom().toFixed(1)}`, esc(BASEMAPS[this.base].name));
+  }
+
+  showFeed(tab = "Events") {
+    this._detail = null; this._feedTab = tab; this.map.setFilter("sel", ["==", ["get", "id"], ""]);
+    document.getElementById("d-type").textContent = "Feed";
+    document.getElementById("d-title").textContent = { Events: "Events, last 60 min", Hotspots: "Hotspots, ranked", Traffic: "Traffic in view" }[tab];
+    document.getElementById("d-back").hidden = true;
+    const tb = document.getElementById("d-tabs"); tb.hidden = false;
+    tb.innerHTML = ["Events", "Hotspots", "Traffic"].map((t) => `<button class="${t === tab ? "on" : ""}">${t}</button>`).join("");
+    tb.querySelectorAll("button").forEach((b) => b.onclick = () => this.showFeed(b.textContent));
     const body = document.getElementById("d-body");
+    if (tab === "Hotspots") {
+      const hs = this.hotspots(40), mx = Math.max(1, ...hs.map((h) => h.score));
+      body.innerHTML = `<table class="grid hs"><thead><tr><th>Location</th><th class="r">Events</th><th class="r">Violent</th><th class="r">Tone</th><th class="r">Mil. air</th><th>Score</th></tr></thead><tbody>` +
+        hs.map((h, i) => `<tr data-i="${i}"><td>${esc(h.place)}</td><td class="r mono">${h.n}</td><td class="r mono ${h.viol / h.n > 0.5 ? "dn" : ""}">${h.viol}</td><td class="r mono">${h.tone.toFixed(1)}</td><td class="r mono">${h.mil}</td><td><span class="barv"><i style="width:${Math.round((h.score / mx) * 100)}%"></i></span></td></tr>`).join("") + `</tbody></table>
+        <div class="note">Score weighs event count, violent events (×2), military aircraft within about 250 km (×1.5) and media mentions.</div>`;
+      body.querySelectorAll("tr[data-i]").forEach((tr) => tr.onclick = () => { const h = hs[+tr.dataset.i]; this.flyTo(h.lat, h.lon, 6); });
+      return;
+    }
+    if (tab === "Traffic") {
+      const cnt = (arr, f) => Object.entries(arr.reduce((o, x) => ((o[f(x)] = (o[f(x)] || 0) + 1), o), {})).sort((a, b) => b[1] - a[1]);
+      const avg = (arr, f) => (arr.length ? arr.reduce((a, x) => a + (+f(x) || 0), 0) / arr.length : 0);
+      const air = this.data.ac.filter((a) => !a.gnd), alt = (lo, hi) => air.filter((a) => +a.alt >= lo && +a.alt < hi).length;
+      const tbl = (title, rows) => `<div class="sect">${title}</div><dl class="kv">${rows.map(([k, v]) => `<dt>${esc(k)}</dt><dd class="mono">${v}</dd>`).join("")}</dl>`;
+      body.innerHTML =
+        tbl("Aircraft", [["Airborne", air.length.toLocaleString()], ["Average altitude", `${Math.round(avg(air, (a) => a.alt)).toLocaleString()} ft`], ["Average ground speed", `${Math.round(avg(air, (a) => a.gs))} kt`],
+          ["Below 10,000 ft", alt(0, 10000)], ["10,000 to 30,000 ft", alt(10000, 30000)], ["Above 30,000 ft", alt(30000, 1e6)]]) +
+        tbl("Aircraft by country", cnt(this.data.ac, (a) => a.country || "Unknown").slice(0, 8)) +
+        tbl("Vessels", [["Total", this.data.ships.length.toLocaleString()], ["Underway (over 1 kn)", this.data.ships.filter((s) => +s.sog > 1).length], ["Average speed", `${avg(this.data.ships, (s) => s.sog).toFixed(1)} kn`]]) +
+        tbl("Vessels by class", cnt(this.data.ships, (s) => shipCode[s.cls] || "Unknown")) +
+        tbl("Top destinations", cnt(this.data.ships.filter((s) => s.dest), (s) => s.dest).slice(0, 6));
+      return;
+    }
+    const evs = [...this.data.events].filter((e) => this.f.cat.has(e.cat)).sort((a, b) => b.mentions - a.mentions).slice(0, 200);
     body.innerHTML = evs.length ? evs.map((e, i) => `<div class="ev" data-i="${i}"><span class="sw" style="background:${catColor[e.cat]}"></span><b>${esc(e.place || e.cc)}</b><span class="cat" style="color:${catColor[e.cat]}">${catCode[e.cat]}</span>
       <span class="t2"><span class="mono">E-${esc(e.id)}</span> · ${esc([e.a1, e.a2].filter(Boolean).join(" → ") || "—")} · ${e.mentions} mentions · tone ${e.tone} · ${esc(String(e.ts).slice(8, 10) + ":" + String(e.ts).slice(10, 12))} UTC</span></div>`).join("")
       : `<div class="empty">No events in view</div>`;

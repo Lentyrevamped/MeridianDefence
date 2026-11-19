@@ -64,6 +64,7 @@
       <div class="pfoot"><span id="base-name">Dark</span><span class="sp"></span><span id="map-health">Map</span><b id="map-health-v" class="ok">Connected</b></div>
     </aside>
     <div class="center">
+      <div class="kpis" id="kpis"></div>
       <div id="map"></div>
       <div class="mtools l">
         <button data-act="base-cycle" title="Cycle basemap (B)"><svg viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/></svg></button>
@@ -91,6 +92,7 @@
       <div class="ptabs"><button class="on">Watchlist</button></div>
       <div class="psearch mk-search"><input id="mk-q" placeholder="Symbol or name…"><div id="mk-results" class="dropdown"></div></div>
       <table class="grid wl"><thead><tr><th>Symbol</th><th></th><th class="r">Last</th><th class="r">Change</th><th></th></tr></thead><tbody id="wl"></tbody></table>
+      <div class="movers" id="movers"></div>
     </aside>
     <div class="center mk-main">
       <div class="qhead">
@@ -99,16 +101,17 @@
       </div>
       <div class="toolbar" id="ranges"><button>1D</button><button>5D</button><button>1M</button><button>6M</button><button class="on">1Y</button><button>5Y</button><button>MAX</button>
         <span class="sep"></span><button id="ct-line" class="on">Line</button><button id="ct-candle">Candles</button><span class="sp"></span><button id="q-add">Add to watchlist</button><button id="q-ask">Ask analyst</button></div>
-      <div id="chart"></div>
+      <div id="chart"></div><div class="clegend" id="q-legend"></div>
     </div>
     <aside class="rp">
       <div class="rp-head"><span>Range statistics</span></div>
-      <div class="rp-body"><dl class="kv" id="q-stats"></dl></div>
+      <div class="rp-body"><div id="q-stats"></div></div>
     </aside>
   </section>
 
   <!-- ANL -->
   <section id="v-analyst" class="view anl">
+    <aside class="lp"><div class="ptabs"><button class="on">Live context</button></div><div class="rp-body" id="anl-ctx"></div></aside>
     <div class="center chat">
       <div class="sechead"><span>Analyst</span><span class="sp"></span><span class="muted" id="anl-model"></span></div>
       <div id="chat-log" class="chat-log"></div>
@@ -150,6 +153,7 @@
       <div id="c-list"></div>
     </aside>
     <div class="center os-main" id="os-main"><div class="empty">Select a case, or create one with +</div></div>
+    <aside class="rp"><div class="rp-head"><span>Case summary</span></div><div class="rp-body" id="inv-sum"><div class="empty">No case selected</div></div></aside>
   </section>
 
   <!-- SYS -->
