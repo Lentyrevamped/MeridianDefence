@@ -2,6 +2,8 @@
 # States: intro -> pin -> splash -> quit (final frame = mark + wordmark, kept for the GDM hand-off).
 # Disk unlock is stock (TPM+PIN, recovery key); this theme only draws the prompt. No Ledger at boot.
 # Art is rendered for an 1800 px tall panel and scaled by S for other panels. No fonts needed in the initrd.
+# Background and bottom signoff are the same as the login screen (meridian-ground + gdm-logo at GDM's size/place),
+# so PIN -> splash -> GDM reads as one surface.
 
 Window.SetBackgroundTopColor(0.0392, 0.0392, 0.0471);
 Window.SetBackgroundBottomColor(0.0392, 0.0392, 0.0471);
@@ -10,6 +12,8 @@ S = H / 1800; if (S > 1.6) S = 1.6;
 CX = X0 + W / 2;
 fun Y(v) { return Y0 + H / 2 + (v - 900) * S; }      # design y (0..1800) -> screen y, centred
 FPS = 50;
+ground_src = Image("ground.png");                 # copied from /usr/share/backgrounds/meridian at build time
+if (ground_src) { ground = Sprite(ground_src.Scale(W, H)); ground.SetX(X0); ground.SetY(Y0); ground.SetZ(-100); }
 
 fun ld(name) { ld_im = Image(name + ".png"); if (S < 0.999 || S > 1.001) ld_im = ld_im.Scale(Math.Int(ld_im.GetWidth() * S + 0.5), Math.Int(ld_im.GetHeight() * S + 0.5)); return ld_im; }
 fun mk(img, z) { mk_s = Sprite(img); mk_s.SetZ(z); mk_s.SetOpacity(0); return mk_s; }
@@ -103,7 +107,8 @@ fun refresh() {
   g = ease(grow);
   intro_op = clamp01(tm / 0.6);
   draw_star(mix(80, 245, g), mix(585, 765, g), intro_op);
-  sign.SetOpacity(0.5 * intro_op); put(sign, sign_img, CX, Y(1722));
+  # GDM draws its logo bin 42 logical px above the bottom, logo 66 px tall: centre = H - 75 * 1.25 at 1800 px.
+  sign.SetOpacity(intro_op); put(sign, sign_img, CX, Y(1706));
 
   # ---- PIN ----
   if (pin_op > 0.01) {

@@ -125,10 +125,27 @@ export default class MeridianLedger extends Extension {
                 return a ? orig.call(this, a) : undefined;
             });
         }
-        if (Main.sessionMode.isGreeter) safe(() => this._handoff())();
+        if (Main.sessionMode.isGreeter) {
+            safe(() => this._greeterSurface())();
+            safe(() => this._handoff())();
+        }
     }
 
-    // Boot hand-off: Plymouth's last frame is the mark + wordmark on Ink. Recreate it and dissolve into the greeter.
+    // Greeter background = boot PIN screen background (meridian-ground), via a style class on #lockDialogGroup.
+    _greeterSurface() {
+        const find = (a, depth) => {
+            if (!a || depth > 6) return null;
+            if (a.get_name?.() === 'lockDialogGroup') return a;
+            for (const c of a.get_children?.() ?? []) { const f = find(c, depth + 1); if (f) return f; }
+            return null;
+        };
+        const g = Main.screenShield?._lockDialogGroup ?? find(Main.layoutManager.uiGroup, 0);
+        if (!g?.add_style_class_name) return;
+        g.add_style_class_name('meridian-greeter');
+        this._greeterGroup = g;
+    }
+
+    // Boot hand-off: Plymouth's last frame is the mark + wordmark + bottom logo on the ground surface. Recreate it and dissolve into the greeter.
     _handoff() {
         if (GLib.getenv('MERIDIAN_NO_HANDOFF')) return;
         const mon = Main.layoutManager.primaryMonitor; if (!mon) return;
@@ -139,7 +156,11 @@ export default class MeridianLedger extends Extension {
         star.set_position(Math.round(mon.width / 2 - star.icon_size / 2), Math.round(612 * s - star.icon_size / 2));
         const ww = 344 * s, word = new St.Icon({gicon: file('wordmark.svg'), width: Math.round(ww), height: Math.round(ww * 44 / 392.36)});
         word.set_position(Math.round(mon.width / 2 - ww / 2), Math.round(781 * s - ww * 44 / 392.36 / 2));
-        over.add_child(star); over.add_child(word);
+        // Same bottom logo GDM shows (gdm-logo.svg, 445x66 logical, bin 42 px above the bottom) so nothing jumps.
+        const logo = new St.Widget({width: 445, height: 66,
+            style: 'background-image: url("file:///usr/share/meridian/gdm-logo.svg"); background-size: contain;'});
+        logo.set_position(Math.round(mon.width / 2 - 445 / 2), Math.round(mon.height - 42 - 66));
+        over.add_child(star); over.add_child(word); over.add_child(logo);
         Main.layoutManager.addTopChrome(over);
         this._over = over;
         word.ease({opacity: 0, duration: 350, delay: 150, mode: Clutter.AnimationMode.EASE_IN_CUBIC});
@@ -154,5 +175,6 @@ export default class MeridianLedger extends Extension {
         for (const c of this._cards ?? []) safe(() => c.destroy())();
         this._cards = null;
         this._over?.destroy(); this._over = null;
+        this._greeterGroup?.remove_style_class_name('meridian-greeter'); this._greeterGroup = null;
     }
 }

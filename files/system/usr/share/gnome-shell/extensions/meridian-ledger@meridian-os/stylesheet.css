@@ -9,4 +9,6 @@
 .meridian-status.ok, .meridian-status.bad { color: #F1F1EE; }
 .meridian-key { border-radius: 4px; padding: 10px; background-color: rgba(255,255,255,0.035); border: 1px solid rgba(255,255,255,0.08); color: rgba(241,241,238,0.30); }
 .meridian-key:hover { color: rgba(241,241,238,0.62); }
-.meridian-handoff { background-color: #0A0A0C; }
+.meridian-handoff { background-color: #0A0A0C; background-image: url("file:///usr/share/backgrounds/meridian/meridian-ground.png"); background-size: cover; }
+/* Login screen (greeter only, class added from JS): same surface as the boot PIN screen instead of stock grey. */
+#lockDialogGroup.meridian-greeter { background-color: #0A0A0C; background-image: url("file:///usr/share/backgrounds/meridian/meridian-ground.png"); background-size: cover; }
