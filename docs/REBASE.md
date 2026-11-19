@@ -5,15 +5,34 @@ recovery key, password login, lock screen, run0, apps, Keep Screen On, Ctrl+C/V,
 enrolment, Ctrl+Alt+F3 rescue, `meridian-ledger disable`, rollback. All passed (builds b4f98e4, 43fb1d2, a938ff6, f1982b7).
 
 ## Before
-- `rpm-ostree status`: note the current image line (secureblue silverblue-nvidia-open-hardened).
-- `run0 ostree admin pin 0`: keeps today's secureblue deployment in the boot menu for good (undo: `ostree admin pin -u 0`).
+- Image must be e5ca8ca or newer (keeps secureblue's container policy, default reject; older builds shipped a weaker template).
+- `rpm-ostree status`: note the booted (●) secureblue image and any LayeredPackages. If a failed attempt left a pending
+  deployment: `run0 rpm-ostree cleanup -p`.
+- Pin the booted secureblue deployment so it stays in the boot menu: `run0 sh -c 'ostree admin pin <index of ●>'`
+  (0 normally, 1 if something is staged at 0). Undo later with `ostree admin pin -u <index>`.
 - Have the LUKS recovery key (paper) at hand.
 
-## Commands (two reboots)
-1. `run0 rpm-ostree rebase ostree-unverified-registry:ghcr.io/lentyrevamped/meridian-os:latest`, then `systemctl reboot`.
-   (Unverified once only because the Meridian signing key is not on the laptop yet; the image brings it.)
-2. `run0 rpm-ostree rebase ostree-image-signed:docker://ghcr.io/lentyrevamped/meridian-os:latest`, then `systemctl reboot`.
-   From then on every daily update is signature-checked against the Meridian key.
+## Host trust (secureblue rejects unknown images, even "unverified" rebases)
+Add the Meridian key the same way the image ships it:
+- `/etc/pki/containers/meridian-os.pub` = `cosign.pub` from this repo.
+- `/etc/containers/registries.d/lentyrevamped-meridian-os.yaml`:
+  `docker: {ghcr.io/lentyrevamped/meridian-os: {use-sigstore-attachments: true}}`
+- `/etc/containers/policy.json` = copy of `/usr/share/containers/policy.json` plus, under `transports.docker`:
+  `"ghcr.io/lentyrevamped/meridian-os": [{"type": "sigstoreSigned", "keyPath": "/etc/pki/containers/meridian-os.pub", "signedIdentity": {"type": "matchRepository"}}]`
+  Default stays reject. Check with `python3 -m json.tool /etc/containers/policy.json`.
+
+## Command (one reboot)
+`run0 rpm-ostree rebase --uninstall rclone ostree-image-signed:docker://ghcr.io/lentyrevamped/meridian-os:latest`, then
+`systemctl reboot`. (`--uninstall rclone`: it was layered on the host and is in the image now.)
+
+## After the first boot
+- Hand the three trust files back to the image so daily updates manage them (otherwise ostree keeps the hand-made copies):
+  `run0 cp /usr/etc/containers/policy.json /etc/containers/policy.json`,
+  `run0 cp /usr/etc/containers/registries.d/lentyrevamped-meridian-os.yaml /etc/containers/registries.d/`,
+  `run0 cp /usr/etc/pki/containers/meridian-os.pub /etc/pki/containers/`; then `ostree admin config-diff | grep -E 'containers|pki'`
+  should list none of them.
+- `meridian-ledger status` = OFF; `systemctl --user status meridian-flatpaks`; old copies from the daily-driver setup
+  (`~/.config/systemd/user/meridian-*`, `~/.local/bin/meridian-*`) can go once the image's versions work.
 
 ## What changes
 - Boot: Meridian splash and PIN screen. Same TPM PIN; recovery key prompt still there. No TPM/LUKS change at all.
