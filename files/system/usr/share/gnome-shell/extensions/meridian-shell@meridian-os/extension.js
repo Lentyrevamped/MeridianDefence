@@ -549,8 +549,25 @@ class QuickSettingsLayout {
         this._grid.layout_manager.nColumns = 3;
         menu.box.add_style_class_name('meridian-qs');
         this._grid.connectObject('child-added', () => this._queue(), this);
-        menu.connectObject('open-state-changed', (_m, open) => { if (open) safe(() => this._apply())(); }, this);
+        menu.connectObject('open-state-changed', (_m, open) => { if (open) { this._page = 0; safe(() => this._apply())(); safe(() => this._repage())(); } }, this);
+        // pager (Windows style): 3 small vertical dots and a caret on the right edge of the tiles
+        this._page = 0;
+        this._pager = new St.BoxLayout({orientation: Clutter.Orientation.VERTICAL, style_class: 'meridian-qs-pager', x_align: Clutter.ActorAlign.END, y_align: Clutter.ActorAlign.START, reactive: true, visible: false});
+        this._dots = new St.BoxLayout({orientation: Clutter.Orientation.VERTICAL, style_class: 'meridian-qs-dots', x_align: Clutter.ActorAlign.CENTER});
+        this._pager.add_child(this._dots);
+        this._next = new St.Button({style_class: 'meridian-qs-next', child: icon('pan-down-symbolic', 10), can_focus: true, accessible_name: 'Next page'});
+        this._next.connect('clicked', () => safe(() => this._go(1))());
+        this._pager.add_child(this._next);
+        menu._overlay?.add_child(this._pager);
+        menu.box.connectObject('scroll-event', (_a, ev) => {
+            const d = ev.get_scroll_direction();
+            if (d === Clutter.ScrollDirection.DOWN) safe(() => this._go(1))();
+            else if (d === Clutter.ScrollDirection.UP) safe(() => this._go(-1))();
+            return Clutter.EVENT_PROPAGATE;
+        }, this);
+        this._park = new Set();
         this._apply();
+        this._repage();
     }
     _queue() {
         if (this._idle) return;
@@ -561,7 +578,12 @@ class QuickSettingsLayout {
         let system = null;
         for (const c of this._grid.get_children()) {
             if (this._done.has(c) || !(c instanceof Clutter.Actor)) continue;
-            if (c instanceof QuickSettings.QuickToggle || c instanceof QuickSettings.QuickMenuToggle) { this._tile(c); continue; }
+            if (c instanceof QuickSettings.QuickToggle || c instanceof QuickSettings.QuickMenuToggle) {
+                this._tile(c);
+                c.connectObject('notify::visible', () => this._queueRepage(), this);
+                this._queueRepage();
+                continue;
+            }
             const span = safe(() => lm.get_child_meta(this._grid, c)?.column_span ?? 1, () => 1)();
             if (span >= 2) {
                 this._done.set(c, {span});
@@ -575,6 +597,56 @@ class QuickSettingsLayout {
         if (system && this._grid.get_last_child() !== system) {
             this._grid.set_child_above_sibling(system, null);
             system.add_style_class_name('meridian-qs-footer');
+        }
+    }
+    _queueRepage() {
+        if (this._rpIdle) return;
+        this._rpIdle = GLib.idle_add(GLib.PRIORITY_DEFAULT, () => { this._rpIdle = 0; safe(() => this._repage())(); return GLib.SOURCE_REMOVE; });
+    }
+    // Windows order; anything else follows. Six tiles a page.
+    static RANK = [/wi-?fi|wired|network|ethernet/i, /bluetooth/i, /airplane/i, /keep screen/i, /night/i, /accessib/i, /disturb/i, /dark/i, /power/i];
+    _rank(t) { const title = t.title ?? ''; const i = QuickSettingsLayout.RANK.findIndex(r => r.test(title)); return i < 0 ? 100 : i; }
+    _anchor() {
+        // first non-tile item after the tiles (a slider, else the footer)
+        return this._grid.get_children().find(c => this._done.get(c)?.span) ?? null;
+    }
+    _repage() {
+        if (!this._grid) return;
+        const tiles = [...this._done.keys()].filter(c => this._done.get(c).wrap && c.visible);
+        tiles.sort((a, b) => this._rank(a) - this._rank(b));
+        const per = 6, pages = Math.max(1, Math.ceil(tiles.length / per));
+        this._page = Math.min(Math.max(this._page ?? 0, 0), pages - 1);
+        const shown = new Set(tiles.slice(this._page * per, this._page * per + per));
+        const anchor = this._anchor();
+        for (const t of tiles) {
+            const parent = t.get_parent();
+            if (shown.has(t)) {
+                if (parent !== this._grid) parent?.remove_child(t);
+                else this._grid.remove_child(t);
+                if (anchor) this._grid.insert_child_below(t, anchor); else this._grid.add_child(t);
+                this._park.delete(t);
+            } else if (parent === this._grid) {
+                this._grid.remove_child(t); this._park.add(t);
+            }
+        }
+        // pager
+        this._pager.visible = pages > 1;
+        this._dots.destroy_all_children();
+        for (let i = 0; i < pages; i++) {
+            const d = new St.Button({style_class: `meridian-qs-dot${i === this._page ? ' current' : ''}`, can_focus: false});
+            d.connect('clicked', () => { this._page = i; safe(() => this._repage())(); });
+            this._dots.add_child(d);
+        }
+    }
+    _go(dir) {
+        const tiles = [...this._done.keys()].filter(c => this._done.get(c).wrap && c.visible);
+        const pages = Math.max(1, Math.ceil(tiles.length / 6));
+        if (pages < 2) return;
+        this._page = (this._page + dir + pages) % pages;
+        this._repage();
+        if (St.Settings.get().enable_animations) for (const t of this._grid.get_children()) if (this._done.get(t)?.wrap) {
+            t.opacity = 0; t.translation_y = dir * 8;
+            t.ease({opacity: 255, translation_y: 0, duration: 200, mode: EASE_IN});
         }
     }
     _tile(t) {
@@ -603,7 +675,12 @@ class QuickSettingsLayout {
     }
     destroy() {
         if (this._idle) GLib.Source.remove(this._idle);
-        this._grid?.disconnectObject(this); this._menu?.disconnectObject(this);
+        if (this._rpIdle) GLib.Source.remove(this._rpIdle);
+        this._grid?.disconnectObject(this); this._menu?.disconnectObject(this); this._menu?.box.disconnectObject(this);
+        const anchor = this._grid ? this._anchor() : null;
+        for (const t of this._park ?? []) safe(() => { if (anchor) this._grid.insert_child_below(t, anchor); else this._grid.add_child(t); })();
+        this._park?.clear();
+        this._pager?.destroy(); this._pager = null;
         for (const [c, d] of this._done) safe(() => {
             if (d.wrap) {
                 c.disconnectObject(this);
