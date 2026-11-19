@@ -1,9 +1,9 @@
 // OSINT investigations: cases, subjects, guarded lookups, audit log.
 import { api, esc, safeUrl, ago, toast } from "./api.js";
 
-const MOD_LABEL = { profile: "PRF", news: "NWS", usernames: "USR", filings: "SEC", breach: "BRC", providers: "LIC" };
+const MOD_LABEL = { profile: "Profile", news: "News", usernames: "Usernames", filings: "Filings", breach: "Breaches", providers: "Providers" };
 const MOD_NAME = { profile: "Profile", news: "News mentions", usernames: "Username sweep", filings: "SEC filings", breach: "Breach exposure", providers: "Licensed providers" };
-const KIND = { public: "PUB", company: "ORG", private: "PRV" };
+const KIND = { public: "Public figure", company: "Company", private: "Private" };
 const MOD_HINT = {
   profile: "Wikidata + Wikipedia profile, official accounts", news: "News mentions, last 3 months (defaults to the name)",
   usernames: "Handle to sweep across ~45 platforms", filings: "SEC EDGAR full-text (defaults to the name)",
@@ -33,7 +33,7 @@ export class Osint {
   async loadCases() {
     const d = await api("/api/osint/cases"); this.cases = d.cases;
     document.getElementById("c-list").innerHTML = d.cases.map((c) => `<div class="case ${this.case?.id === c.id ? "on" : ""}" data-id="${esc(c.id)}">
-      <b>${esc(c.title)}</b><span>${esc(c.id)} · ${c.subjects.length} SUBJ${c.closed ? " · CLOSED" : ""}</span></div>`).join("") || `<div class="empty">NO CASES</div>`;
+      <b>${esc(c.title)}</b><span>${esc(c.id)} · ${c.subjects.length} subjects${c.closed ? " · closed" : ""}</span></div>`).join("") || `<div class="empty">No cases yet</div>`;
     document.querySelectorAll(".case").forEach((el) => el.onclick = () => this.openCase(el.dataset.id));
   }
 
@@ -50,18 +50,18 @@ export class Osint {
     const ORDER = ["profile", "usernames", "news", "filings", "breach", "providers"];
     const mods = this.subject ? ORDER.filter((k) => this.meta.modules[this.subject.kind].includes(k)) : [];
     if (this.subject && !mods.includes(this.module)) this.module = mods.includes("profile") ? "profile" : mods[0];
-    m.innerHTML = `<div class="os-head"><span class="rp-type">CASE</span><div><h2>${esc(c.title)}</h2><p><span class="id">${esc(c.id)}</span> · ${esc(this.meta.bases[c.basis] || c.basis)}${c.client ? " · client " + esc(c.client) : ""}</p>
+    m.innerHTML = `<div class="os-head"><span class="rp-type">Case</span><div><h2>${esc(c.title)}</h2><p><span class="id">${esc(c.id)}</span> · ${esc(this.meta.bases[c.basis] || c.basis)}${c.client ? " · client " + esc(c.client) : ""}</p>
       <p>Purpose: ${esc(c.purpose)}</p></div><span class="sp"></span>
-      <a class="btn" href="/api/osint/audit/export?case=${encodeURIComponent(c.id)}">EXPORT AUDIT</a>${c.closed ? "" : `<button class="btn" id="c-close">CLOSE</button>`}</div>
+      <a class="btn" href="/api/osint/audit/export?case=${encodeURIComponent(c.id)}">Export audit</a>${c.closed ? "" : `<button class="btn" id="c-close">Close case</button>`}</div>
       <div class="os-body">
       <h3>Subjects</h3>
       <div class="subjects">${c.subjects.map((s) => `<button class="chip ${this.subject?.id === s.id ? "on" : ""}" data-sid="${s.id}"><em>${KIND[s.kind]}</em>${esc(s.name)}</button>`).join("") || '<span class="chip dim">none</span>'}</div>
       ${c.closed ? "" : `<form class="addsub" id="addsub"><input name="name" placeholder="Subject name" value="${esc(this._prefill || "")}" required>
-        <select name="kind"><option value="public">PUB · public figure</option><option value="company">ORG · company</option><option value="private">PRV · private individual</option></select>
-        <button class="btn pri">ADD</button></form><div class="cands" id="cands"></div>`}
+        <select name="kind"><option value="public">Public figure</option><option value="company">Company</option><option value="private">Private individual</option></select>
+        <button class="btn pri">Add subject</button></form><div class="cands" id="cands"></div>`}
       ${this.subject ? `<h3>Modules <small>${esc(MOD_NAME[this.module])}</small></h3><div class="mods" id="mods">${mods.map((k) => `<button data-m="${k}" class="${k === this.module ? "on" : ""}" title="${esc(MOD_NAME[k])}">${MOD_LABEL[k]}</button>`).join("")}</div>
-        <form class="lk" id="lk"><input name="q" placeholder="${esc(MOD_HINT[this.module])}"><button class="btn pri">RUN</button></form>
-        <div id="res"></div>` : `<div class="empty">ADD A SUBJECT</div>`}
+        <form class="lk" id="lk"><input name="q" placeholder="${esc(MOD_HINT[this.module])}"><button class="btn pri">Run</button></form>
+        <div id="res"></div>` : `<div class="empty">Add a subject to start</div>`}
       <h3>Audit log <span id="vfy"></span></h3><div id="audit"></div></div>`;
     this._prefill = null;
     m.querySelectorAll("[data-sid]").forEach((b) => b.onclick = () => { this.subject = c.subjects.find((s) => s.id === +b.dataset.sid); this.render(); });
@@ -83,7 +83,7 @@ export class Osint {
       }
       const r = await api(`/api/osint/cases/${encodeURIComponent(c.id)}/link-search`, { method: "POST", body: { name } });
       const el = document.getElementById("cands");
-      el.innerHTML = `<div class="note" style="cursor:default;border:0;padding:4px 0">Select Wikidata entity (required for PUB/ORG):</div>` +
+      el.innerHTML = `<div class="note" style="cursor:default;border:0;padding:4px 0">Select Wikidata entity (required for public figures and companies):</div>` +
         r.results.map((x, i) => `<div data-i="${i}"><b>${esc(x.label)}</b><span>${esc(x.description)} · ${esc(x.id)}</span></div>`).join("") +
         `<div data-private><b>NONE</b><span>add as PRV instead</span></div>`;
       el.querySelectorAll("[data-i]").forEach((d) => d.onclick = async () => { const x = r.results[+d.dataset.i];
@@ -94,11 +94,11 @@ export class Osint {
   }
 
   async run(q) {
-    const res = document.getElementById("res"); res.innerHTML = `<div class="res"><div class="note">RUNNING ${MOD_LABEL[this.module]}…</div></div>`;
+    const res = document.getElementById("res"); res.innerHTML = `<div class="res"><div class="note">Running ${MOD_NAME[this.module]}…</div></div>`;
     try {
       const r = await api("/api/osint/lookup", { method: "POST", body: { case: this.case.id, subject: this.subject.id, module: this.module, query: q || "" } });
       res.innerHTML = this.renderResult(r.module, r.data);
-    } catch (e) { res.innerHTML = `<div class="res"><h3 class="bad">REFUSED / FAILED</h3><div class="note">${esc(e.message)}</div></div>`; }
+    } catch (e) { res.innerHTML = `<div class="res"><h3 class="bad">Refused or failed</h3><div class="note">${esc(e.message)}</div></div>`; }
     this.loadAudit();
   }
 
@@ -130,8 +130,8 @@ export class Osint {
 
   async loadAudit() {
     const d = await api(`/api/osint/audit?case=${encodeURIComponent(this.case.id)}`);
-    document.getElementById("vfy").innerHTML = d.verify.ok ? `<span class="vfy">CHAIN OK · ${d.verify.rows}</span>` : `<span class="vfy bad">CHAIN BROKEN @${d.verify.break_at}</span>`;
-    document.getElementById("audit").innerHTML = `<table class="audit"><tr><th>SEQ</th><th>T</th><th>SUBJECT</th><th>MOD</th><th>QUERY</th><th>OUTCOME</th><th>HASH</th></tr>` +
-      d.entries.map((e) => `<tr><td>${String(e.seq).padStart(5, "0")}</td><td>${new Date(e.ts * 1000).toISOString().slice(5, 19).replace("T", " ")}</td><td>${esc(e.subject)} <span class="dim">${esc(KIND[e.kind] || e.kind)}</span></td><td class="mono">${esc(MOD_LABEL[e.module] || e.module)}</td><td>${esc(e.query)}</td><td class="${e.outcome === "ok" ? "ok" : e.outcome.startsWith("refused") ? "bad" : ""}">${esc(e.outcome)}${e.results ? ` · ${e.results}` : ""}</td><td class="h">${esc(e.hash.slice(0, 12))}</td></tr>`).join("") + `</table>`;
+    document.getElementById("vfy").innerHTML = d.verify.ok ? `<span class="vfy">Chain verified · ${d.verify.rows} entries</span>` : `<span class="vfy bad">Chain broken at entry ${d.verify.break_at}</span>`;
+    document.getElementById("audit").innerHTML = `<table class="audit"><tr><th>#</th><th>Time (UTC)</th><th>Subject</th><th>Module</th><th>Query</th><th>Outcome</th><th>Hash</th></tr>` +
+      d.entries.map((e) => `<tr><td>${String(e.seq).padStart(5, "0")}</td><td>${new Date(e.ts * 1000).toISOString().slice(5, 19).replace("T", " ")}</td><td>${esc(e.subject)} <span class="dim">${esc(KIND[e.kind] || e.kind)}</span></td><td>${esc(MOD_LABEL[e.module] || e.module)}</td><td>${esc(e.query)}</td><td class="${e.outcome === "ok" ? "ok" : e.outcome.startsWith("refused") ? "bad" : ""}">${esc(e.outcome)}${e.results ? ` · ${e.results}` : ""}</td><td class="h">${esc(e.hash.slice(0, 12))}</td></tr>`).join("") + `</table>`;
   }
 }

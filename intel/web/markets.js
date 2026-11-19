@@ -52,7 +52,7 @@ export class Markets {
     const tb = document.getElementById("wl");
     tb.innerHTML = this.items.map((it, i) => { const c = chg(it.price, it.prev);
       return `<tr data-i="${i}" class="${it.symbol === this.sym ? "on" : ""}"><td class="s"><b>${esc(it.symbol)}</b><span>${esc(it.label || it.name || "")}</span></td>
-      <td><canvas></canvas></td><td class="p">${it.error ? '<span class="dim">N/A</span>' : fmt(it.price)}</td><td class="c ${c.cls}">${it.error ? "" : (c.pct >= 0 ? "+" : "") + c.pct.toFixed(2) + "%"}</td>
+      <td><canvas></canvas></td><td class="p">${it.error ? '<span class="dim">n/a</span>' : fmt(it.price)}</td><td class="c ${c.cls}">${it.error ? "" : (c.pct >= 0 ? "+" : "") + c.pct.toFixed(2) + "%"}</td>
       <td class="x" title="Remove">×</td></tr>`; }).join("");
     tb.querySelectorAll("tr").forEach((tr) => { const it = this.items[+tr.dataset.i];
       spark(tr.querySelector("canvas"), it.spark, 46, 20);

@@ -3,7 +3,7 @@ import { api, esc, safeUrl, fmt, ago } from "./api.js";
 
 maplibregl.setWorkerUrl("/static/vendor/maplibre-gl-csp-worker.js");
 
-export const C = { t1: "#E6E8EB", t2: "#8A939E", t3: "#5C6570", bg: "#111418", blue: "#4C90F0", green: "#32A467", amber: "#E8A33D", red: "#E5484D", steel: "#8FA3B8" };
+export const C = { t1: "#E1E7EE", t2: "#8B9AAB", t3: "#5E6D7E", bg: "#0E141B", blue: "#4C90F0", green: "#32A467", amber: "#E8A33D", red: "#E5484D", steel: "#8FA3B8" };
 const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
 const REF = ["https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}"];
 export const BASEMAPS = {
@@ -16,9 +16,9 @@ export const BASEMAPS = {
   terrain: { code: "TER", name: "Terrain (hillshade)", tiles: null, attr: "AWS Terrain Tiles · Natural Earth" },
   outline: { code: "OFF", name: "Offline outline", tiles: null, attr: "Natural Earth (offline)" },
 };
-export const CATS = [["protest", "PRT", C.amber], ["coercion", "COE", C.amber], ["assault", "ASL", C.red], ["fighting", "FGT", C.red], ["mass violence", "MAV", C.red]];
-export const SHIPS = [["cargo", "CGO"], ["tanker", "TNK"], ["passenger", "PAX"], ["fishing", "FSH"], ["service", "SVC"], ["pleasure", "PLR"], ["military", "MIL"], ["other", "OTH"], ["unknown", "UNK"]];
-export const AIR = [["civ", "CIV", "Civil"], ["mil", "MIL", "Military"], ["emg", "EMG", "Emergency squawk 7500/7600/7700"], ["gnd", "GND", "On ground"]];
+export const CATS = [["protest", "Protest", C.amber], ["coercion", "Coercion", C.amber], ["assault", "Assault", C.red], ["fighting", "Fighting", C.red], ["mass violence", "Mass violence", C.red]];
+export const SHIPS = [["cargo", "Cargo"], ["tanker", "Tanker"], ["passenger", "Passenger"], ["fishing", "Fishing"], ["service", "Service"], ["pleasure", "Pleasure"], ["military", "Military"], ["other", "Other"], ["unknown", "Unknown"]];
+export const AIR = [["civ", "Civil", "Civil"], ["mil", "Military", "Military"], ["emg", "Emergency", "Emergency squawk 7500/7600/7700"], ["gnd", "On ground", "On ground"]];
 const catColor = Object.fromEntries(CATS.map(([k, , c]) => [k, c]));
 const catCode = Object.fromEntries(CATS.map(([k, c]) => [k, c]));
 const shipCode = Object.fromEntries(SHIPS);
@@ -96,8 +96,8 @@ export class WorldMap {
         m.addLayer({ id: "labels", type: "raster", source: "labels", paint: { "raster-saturation": -1, "raster-opacity": 0.85 } }, before);
       } else m.addLayer({ id: "borders", type: "line", source: "countries", paint: { "line-color": "#5C6570", "line-width": 0.6 } }, before);
     }
-    document.getElementById("attrib").textContent = `${b.attr} · TRK-A adsb.lol/OpenSky · TRK-M aisstream.io · EVT-G GDELT`;
-    document.getElementById("base-name").textContent = `BASE ${b.code}`;
+    document.getElementById("attrib").textContent = `${b.attr} · Aircraft adsb.lol/OpenSky · Ships aisstream.io · Events GDELT`;
+    document.getElementById("base-name").textContent = b.name;
     this.renderTree();
   }
 
@@ -151,22 +151,22 @@ export class WorldMap {
     const ac = count(this.data.ac, airCls), sh = count(this.data.ships, (s) => s.cls || "unknown"), ev = count(this.data.events, (e) => e.cat);
     const max = (o) => Math.max(1, ...Object.values(o));
     const row = (kind, key, code, name, n, mx, sel, color, radio) => match(`${code} ${name}`) ? `<div class="row ${radio ? "radio" : "chk"} ${sel ? "sel" : "off"}" data-k="${kind}" data-v="${esc(key)}" title="${esc(name)}">
-      <span class="sw" ${color && sel ? `style="background:${color};border-color:${color}"` : ""}></span><span class="nm"><span class="mono">${esc(code)}</span>${name ? ` <span class="dim">${esc(name)}</span>` : ""}</span>
+      <span class="sw" ${color && sel ? `style="background:${color};border-color:${color}"` : ""}></span><span class="nm">${esc(name || code)}</span>
       <span class="n">${n ?? ""}</span>${mx ? `<span class="barv"><i style="width:${Math.round(((n || 0) / mx) * 100)}%"></i></span>` : "<span></span>"}</div>` : "";
     const grp = (code, title, n, on, toggle, body) => `<div class="grp ${this.closed.has(code) ? "closed" : ""}" data-g="${code}">
       <div class="gh"><span class="car">${this.closed.has(code) ? "▸" : "▾"}</span>${toggle ? `<span class="row chk ${on ? "sel" : ""}" data-k="vis" data-v="${toggle}" style="padding:0;height:auto;grid-template-columns:9px;display:inline-grid"><span class="sw"></span></span>` : ""}
-      <b class="mono">${code}</b><span class="muted">${title}</span><span class="n">${n ?? ""}</span></div><div class="gb">${body}</div></div>`;
+      <b>${title}</b><span class="n">${n ?? ""}</span></div><div class="gb">${body}</div></div>`;
     const topPlaces = Object.entries(count(this.data.events, (e) => e.place || e.cc)).sort((a, b) => b[1] - a[1]).slice(0, 8);
     const pmax = Math.max(1, ...topPlaces.map((x) => x[1]));
     el.innerHTML =
-      grp("TRK-A", "Air tracks", this.data.ac.length.toLocaleString(), this.vis.ac, "ac", AIR.map(([k, c, n]) => row("air", k, c, n, ac[k] || 0, max(ac), this.f.air.has(k), { civ: C.t1, mil: C.blue, emg: C.red, gnd: C.t3 }[k])).join("")) +
-      grp("TRK-M", "Maritime tracks", this.data.ships.length.toLocaleString(), this.vis.ships, "ships", SHIPS.map(([k, c]) => row("ship", k, c, k, sh[k] || 0, max(sh), this.f.ship.has(k), k === "military" ? C.blue : C.steel)).join("")) +
-      grp("EVT-G", "Events · 60 min", this.data.events.length.toLocaleString(), this.vis.events, "events",
-        CATS.map(([k, c, col]) => row("cat", k, c, k, ev[k] || 0, max(ev), this.f.cat.has(k), col)).join("") +
-        `<div class="sect" style="padding-left:24px">Top locations</div>` + topPlaces.map(([p, n]) => row("place", p, "LOC", p, n, pmax, true, null)).join("")) +
-      grp("BASE", "Basemap", BASEMAPS[this.base].code, null, null, Object.entries(BASEMAPS).map(([k, b]) => row("base", k, b.code, b.name, null, 0, this.base === k, null, true)).join("")) +
-      grp("OVL", "Overlays", "", null, null, [["labels", "LBL", "Labels and borders"], ["mono", "MNO", "Mono imagery"], ["terrain3d", "3DT", "3D terrain"], ["milfeed", "MILG", "Global military feed (TRK-A)"]]
-        .map(([k, c, n]) => row("ovl", k, c, n, null, 0, this.vis[k], null)).join("") + (this.rings.length ? row("rings", "clear", "RNG", `${this.rings.length} range ring(s), click to clear`, null, 0, true, C.red) : ""));
+      grp("TRK-A", "Air tracks", this.data.ac.length.toLocaleString(), this.vis.ac, "ac", AIR.map(([k, c, n]) => row("air", k, c, c, ac[k] || 0, max(ac), this.f.air.has(k), { civ: C.t1, mil: C.blue, emg: C.red, gnd: C.t3 }[k])).join("")) +
+      grp("TRK-M", "Maritime tracks", this.data.ships.length.toLocaleString(), this.vis.ships, "ships", SHIPS.map(([k, c]) => row("ship", k, c, c, sh[k] || 0, max(sh), this.f.ship.has(k), k === "military" ? C.blue : C.steel)).join("")) +
+      grp("EVT-G", "Events, last 60 min", this.data.events.length.toLocaleString(), this.vis.events, "events",
+        CATS.map(([k, c, col]) => row("cat", k, c, c, ev[k] || 0, max(ev), this.f.cat.has(k), col)).join("") +
+        `<div class="sect" style="padding-left:24px">Top locations</div>` + topPlaces.map(([p, n]) => row("place", p, "", p, n, pmax, true, null)).join("")) +
+      grp("BASE", "Basemap", "", null, null, Object.entries(BASEMAPS).map(([k, b]) => row("base", k, b.code, b.name, null, 0, this.base === k, null, true)).join("")) +
+      grp("OVL", "Overlays", "", null, null, [["labels", "LBL", "Labels and borders"], ["mono", "MNO", "Mono imagery"], ["terrain3d", "3DT", "3D terrain"], ["milfeed", "MILG", "Global military aircraft feed"]]
+        .map(([k, c, n]) => row("ovl", k, c, n, null, 0, this.vis[k], null)).join("") + (this.rings.length ? row("rings", "clear", "RNG", `${this.rings.length} range rings (click to clear)`, null, 0, true, C.red) : ""));
     el.querySelectorAll(".gh").forEach((h) => h.onclick = (e) => { if (e.target.closest("[data-k]")) return; const g = h.parentElement.dataset.g; this.closed.has(g) ? this.closed.delete(g) : this.closed.add(g); this.renderTree(); });
     el.querySelectorAll("[data-k]").forEach((r) => r.onclick = (e) => { e.stopPropagation(); this.treeClick(r.dataset.k, r.dataset.v); });
   }
@@ -189,8 +189,8 @@ export class WorldMap {
 
   renderSources() {
     const s = this.hooks.feedState();
-    document.getElementById("sources").innerHTML = [["TRK-A", "adsb.lol · OpenSky", s.air], ["TRK-M", "aisstream.io", s.sea], ["EVT-G", "GDELT 2.0 events", s.evt], ["IMG", BASEMAPS[this.base].name, "ok"], ["DEM", "AWS Terrain Tiles", "ok"], ["NE", "Natural Earth 110m (local)", "ok"]]
-      .map(([c, n, st]) => `<div class="src"><b>${c}</b><span>${esc(n)}</span><em class="${st === "ok" || st === "live" || st === "demo" ? "ok" : "bad"}">${esc(String(st || "—").toUpperCase().slice(0, 18))}</em></div>`).join("");
+    document.getElementById("sources").innerHTML = [["Aircraft", "adsb.lol · OpenSky", s.air], ["Ships", "aisstream.io", s.sea], ["Events", "GDELT 2.0 events", s.evt], ["Imagery", BASEMAPS[this.base].name, "ok"], ["Elevation", "AWS Terrain Tiles", "ok"], ["Borders", "Natural Earth 110m (local)", "ok"]]
+      .map(([c, n, st]) => `<div class="src"><b>${c}</b><span>${esc(n)}</span><em class="${st === "ok" || st === "live" || st === "demo" ? "ok" : "bad"}">${esc({ ok: "Connected", live: "Live", demo: "Demo" }[st] || String(st || "—").slice(0, 24))}</em></div>`).join("");
   }
 
   search(q) {
@@ -248,19 +248,19 @@ export class WorldMap {
       return { type: "Feature", properties: { km: r }, geometry: { type: "Polygon", coordinates: [pts] } };
     });
     this.rings.push(...feats); this.map.getSource("rings").setData({ type: "FeatureCollection", features: this.rings });
-    this.hooks.toast(`RNG ${km.join(" / ")} km at ${c.lat.toFixed(3)} ${c.lng.toFixed(3)}`); this.renderTree();
+    this.hooks.toast(`Range rings ${km.join(" / ")} km at ${c.lat.toFixed(3)} ${c.lng.toFixed(3)}`); this.renderTree();
   }
 
   // ---------- inspector ----------
   showFeed() {
     this._detail = null; this.map.setFilter("sel", ["==", ["get", "id"], ""]);
-    document.getElementById("d-type").textContent = "FEED"; document.getElementById("d-title").textContent = "EVT-G · last 60 min";
+    document.getElementById("d-type").textContent = "Feed"; document.getElementById("d-title").textContent = "Events, last 60 min";
     document.getElementById("d-back").hidden = true; document.getElementById("d-tabs").hidden = true;
     const evs = [...this.data.events].filter((e) => this.f.cat.has(e.cat)).sort((a, b) => b.mentions - a.mentions).slice(0, 200);
     const body = document.getElementById("d-body");
     body.innerHTML = evs.length ? evs.map((e, i) => `<div class="ev" data-i="${i}"><span class="sw" style="background:${catColor[e.cat]}"></span><b>${esc(e.place || e.cc)}</b><span class="cat" style="color:${catColor[e.cat]}">${catCode[e.cat]}</span>
-      <span class="t2"><span class="mono">E-${esc(e.id)}</span> · ${esc([e.a1, e.a2].filter(Boolean).join(" → ") || "—")} · MEN ${e.mentions} · TONE ${e.tone} · ${esc(String(e.ts).slice(8, 10) + ":" + String(e.ts).slice(10, 12))}Z</span></div>`).join("")
-      : `<div class="empty">NO EVENTS</div>`;
+      <span class="t2"><span class="mono">E-${esc(e.id)}</span> · ${esc([e.a1, e.a2].filter(Boolean).join(" → ") || "—")} · ${e.mentions} mentions · tone ${e.tone} · ${esc(String(e.ts).slice(8, 10) + ":" + String(e.ts).slice(10, 12))} UTC</span></div>`).join("")
+      : `<div class="empty">No events in view</div>`;
     body.querySelectorAll(".ev").forEach((el) => el.onclick = () => { const e = evs[+el.dataset.i]; this.flyTo(e.lat, e.lon, 7); this.select("events", e); });
   }
 
@@ -282,31 +282,31 @@ export class WorldMap {
     const L = (u, t) => `<a target="_blank" rel="noopener noreferrer" href="${esc(safeUrl(u))}">${esc(t)} ↗</a>`;
     const kv = (rows) => `<dl class="kv">${rows.map(([k, v, mono]) => `<dt>${esc(k)}</dt><dd class="${mono ? "mono" : ""}">${v}</dd>`).join("")}</dl>`;
     let type, title, sym, color, tabs;
-    const loc = kv([["Lat", fmt(+p.lat, 5), 1], ["Lon", fmt(+p.lon, 5), 1], ["MGRS-ish", `${(+p.lat).toFixed(2)}N ${(+p.lon).toFixed(2)}E`, 1]]) +
+    const loc = kv([["Lat", fmt(+p.lat, 5), 1], ["Lon", fmt(+p.lon, 5), 1], ["Grid", `${(+p.lat).toFixed(2)}N ${(+p.lon).toFixed(2)}E`, 1]]) +
       `<div class="links"><a href="#" data-fly>Center map</a><a href="#" data-ring>Range ring here</a></div>`;
     if (kind === "ac") {
-      type = "AIR"; title = `A-${String(p.id).toUpperCase()}`; sym = "A"; color = { emg: C.red, mil: C.blue, gnd: C.t3, civ: C.t1 }[airCls(p)];
+      type = "Aircraft"; title = `A-${String(p.id).toUpperCase()}`; sym = "A"; color = { emg: C.red, mil: C.blue, gnd: C.t3, civ: C.t1 }[airCls(p)];
       tabs = {
-        Overview: kv([["Callsign", esc(p.cs || "—"), 1], ["Class", AIR.find((x) => x[0] === airCls(p))[1], 1], ["Altitude", p.gnd ? "GND" : `${fmt(+p.alt, 0)} ft`, 1], ["Ground speed", `${fmt(+p.gs, 0)} kt`, 1], ["Track", `${fmt(+p.trk, 0)}°`, 1], ["Squawk", esc(p.sq || "—") + (["7500", "7600", "7700"].includes(p.sq) ? ` <span class="cat" style="color:${C.red}">EMG</span>` : ""), 1]]),
-        Details: kv([["ICAO 24", esc(String(p.id).toUpperCase()), 1], ["Type", esc(p.type || "—"), 1], ["Registration", esc(p.reg || "—"), 1], ["Military flag", p.mil ? "YES" : "NO", 1], ["Country", esc(p.country || "—")]]),
+        Overview: kv([["Callsign", esc(p.cs || "—"), 1], ["Class", AIR.find((x) => x[0] === airCls(p))[1], 1], ["Altitude", p.gnd ? "On ground" : `${fmt(+p.alt, 0)} ft`, 1], ["Ground speed", `${fmt(+p.gs, 0)} kt`, 1], ["Track", `${fmt(+p.trk, 0)}°`, 1], ["Squawk", esc(p.sq || "—") + (["7500", "7600", "7700"].includes(p.sq) ? ` <span class="cat" style="color:${C.red}">Emergency</span>` : ""), 1]]),
+        Details: kv([["ICAO 24", esc(String(p.id).toUpperCase()), 1], ["Type", esc(p.type || "—"), 1], ["Registration", esc(p.reg || "—"), 1], ["Military flag", p.mil ? "Yes" : "No", 1], ["Country", esc(p.country || "—")]]),
         Location: loc,
-        Source: kv([["Feed", "TRK-A", 1], ["Provider", esc(p.src)], ["Refresh", "10 s"]]) + `<div class="links">${L(`https://globe.adsb.lol/?icao=${encodeURIComponent(p.id)}`, "adsb.lol")}${p.cs ? L(`https://www.flightradar24.com/${encodeURIComponent(p.cs)}`, "FR24") : ""}</div>`,
+        Source: kv([["Feed", "Aircraft (ADS-B)"], ["Provider", esc(p.src)], ["Refresh", "10 s"]]) + `<div class="links">${L(`https://globe.adsb.lol/?icao=${encodeURIComponent(p.id)}`, "adsb.lol")}${p.cs ? L(`https://www.flightradar24.com/${encodeURIComponent(p.cs)}`, "FR24") : ""}</div>`,
       };
     } else if (kind === "ships") {
-      type = "SEA"; title = `M-${p.id}`; sym = "M"; color = p.cls === "military" ? C.blue : C.steel;
+      type = "Vessel"; title = `M-${p.id}`; sym = "M"; color = p.cls === "military" ? C.blue : C.steel;
       tabs = {
-        Overview: kv([["Name", esc(p.name || "—")], ["Class", `${shipCode[p.cls] || "UNK"} <span class="dim">${esc(p.cls)}</span>`, 1], ["Speed", `${fmt(+p.sog, 1)} kn`, 1], ["Course", `${fmt(+p.cog, 0)}°`, 1], ["Heading", `${fmt(+p.hdg, 0)}°`, 1], ["Destination", esc(p.dest || "—"), 1]]),
+        Overview: kv([["Name", esc(p.name || "—")], ["Class", esc(shipCode[p.cls] || "Unknown")], ["Speed", `${fmt(+p.sog, 1)} kn`, 1], ["Course", `${fmt(+p.cog, 0)}°`, 1], ["Heading", `${fmt(+p.hdg, 0)}°`, 1], ["Destination", esc(p.dest || "—"), 1]]),
         Details: kv([["MMSI", esc(p.id), 1], ["IMO", esc(p.imo || "—"), 1], ["Callsign", esc(p.callsign || "—"), 1], ["Last report", p.ts ? ago(+p.ts) : "—"]]),
         Location: loc,
-        Source: kv([["Feed", "TRK-M", 1], ["Provider", "aisstream.io"]]) + `<div class="links">${L(`https://www.marinetraffic.com/en/ais/details/ships/mmsi:${encodeURIComponent(p.id)}`, "MarineTraffic")}${L(`https://www.vesselfinder.com/vessels/details/${encodeURIComponent(p.id)}`, "VesselFinder")}</div>`,
+        Source: kv([["Feed", "Ships (AIS)"], ["Provider", "aisstream.io"]]) + `<div class="links">${L(`https://www.marinetraffic.com/en/ais/details/ships/mmsi:${encodeURIComponent(p.id)}`, "MarineTraffic")}${L(`https://www.vesselfinder.com/vessels/details/${encodeURIComponent(p.id)}`, "VesselFinder")}</div>`,
       };
     } else {
-      type = "EVT"; title = `E-${p.id}`; sym = "E"; color = catColor[p.cat];
+      type = "Event"; title = `E-${p.id}`; sym = "E"; color = catColor[p.cat];
       tabs = {
-        Overview: kv([["Location", esc(p.place)], ["Category", `<span class="cat" style="color:${catColor[p.cat]}">${catCode[p.cat]}</span> ${esc(p.cat)}`], ["Actors", esc([p.a1, p.a2].filter(Boolean).join(" → ") || "—")], ["Mentions", esc(p.mentions), 1], ["Tone", esc(p.tone), 1], ["Goldstein", fmt(+p.gold, 1), 1]]),
+        Overview: kv([["Location", esc(p.place)], ["Category", `<span class="cat" style="color:${catColor[p.cat]}">${catCode[p.cat]}</span>`], ["Actors", esc([p.a1, p.a2].filter(Boolean).join(" → ") || "—")], ["Mentions", esc(p.mentions), 1], ["Tone", esc(p.tone), 1], ["Goldstein", fmt(+p.gold, 1), 1]]),
         Details: kv([["CAMEO", esc(p.code), 1], ["Country", esc(p.cc), 1], ["Added", esc(String(p.ts).replace(/(\d{4})(\d\d)(\d\d)(\d\d)(\d\d).*/, "$1-$2-$3 $4:$5Z")), 1]]) + `<div class="note">Machine-coded from news. One event is a lead; a cluster is signal.</div>`,
         Location: loc,
-        Source: kv([["Feed", "EVT-G", 1], ["Provider", "GDELT 2.0"]]) + `<div class="links">${L(p.url, "Source article")}</div>`,
+        Source: kv([["Feed", "Events (GDELT)"], ["Provider", "GDELT 2.0"]]) + `<div class="links">${L(p.url, "Source article")}</div>`,
       };
     }
     document.getElementById("d-type").textContent = type; document.getElementById("d-title").textContent = title;
@@ -327,11 +327,11 @@ export class WorldMap {
     if (cv.width !== W * dpr || cv.height !== H * dpr) { cv.width = W * dpr; cv.height = H * dpr; }
     const g = cv.getContext("2d"); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
     const now = Date.now(), span = 3600e3, x = (t) => ((t - (now - span)) / span) * (W - 8) + 4;
-    const rows = [["EVT-G", 4, 36], ["TRK-A", 44, 22], ["TRK-M", 70, 22]];
-    g.font = "10px ui-monospace, monospace";
-    for (const [, y, h] of rows) { g.fillStyle = "#151920"; g.fillRect(0, y, W, h); }
+    const rows = [["Events", 4, 36], ["Aircraft", 44, 22], ["Ships", 70, 22]];
+    g.font = "500 10.5px Inter, system-ui, sans-serif";
+    for (const [, y, h] of rows) { g.fillStyle = "#131B24"; g.fillRect(0, y, W, h); }
     // axis ticks every 10 min
-    g.fillStyle = "#5C6570"; g.strokeStyle = "#2A3038";
+    g.fillStyle = "#5E6D7E"; g.strokeStyle = "#2A3846";
     for (let m = 0; m <= 60; m += 5) {
       const t = now - span + m * 60e3, X = x(t); g.beginPath(); g.moveTo(X + 0.5, 0); g.lineTo(X + 0.5, m % 10 ? 4 : H - 12); g.stroke();
       if (m % 10 === 0 && m < 60) g.fillText(new Date(t).toISOString().slice(11, 16), X + 3, H - 2);
@@ -356,12 +356,12 @@ export class WorldMap {
       g.globalAlpha = 1; g.beginPath(); pts.forEach((p, i) => (i ? g.lineTo : g.moveTo).call(g, x(p.t), y0 + h - 2 - (p[key] / mx) * (h - 4))); g.stroke();
     };
     line("ac", 44, 22, C.t1); line("ships", 70, 22, C.steel);
-    for (const [label, y] of rows) { g.fillStyle = "#8A939E"; g.fillText(label, 6, y + 11); }
-    g.strokeStyle = "#F1F1EE"; g.beginPath(); g.moveTo(x(now) + 0.5, 0); g.lineTo(x(now) + 0.5, H - 12); g.stroke();
-    document.getElementById("tl-now").textContent = new Date().toISOString().replace("T", " ").slice(0, 19) + "Z";
+    for (const [label, y] of rows) { g.fillStyle = "#8B9AAB"; g.fillText(label, 6, y + 12); }
+    g.strokeStyle = "#4C90F0"; g.beginPath(); g.moveTo(x(now) + 0.5, 0); g.lineTo(x(now) + 0.5, H - 12); g.stroke();
+    document.getElementById("tl-now").textContent = new Date().toISOString().replace("T", " ").slice(0, 19) + " UTC";
     const ev = {}; this.data.events.forEach((e) => (ev[e.cat] = (ev[e.cat] || 0) + 1));
     document.getElementById("tl-legend").innerHTML = CATS.map(([k, c, col]) => `<div><i style="background:${col}"></i>${c}<span>${ev[k] || 0}</span></div>`).join("") +
-      `<div><i style="background:${C.t1}"></i>AIR<span>${this.data.ac.length}</span></div><div><i style="background:${C.steel}"></i>SEA<span>${this.data.ships.length}</span></div>`;
+      `<div><i style="background:${C.t1}"></i>Aircraft<span>${this.data.ac.length}</span></div><div><i style="background:${C.steel}"></i>Ships<span>${this.data.ships.length}</span></div>`;
   }
 
   flyTo(lat, lon, zoom = 6) { this.map.flyTo({ center: [lon, lat], zoom, speed: 1.6 }); }

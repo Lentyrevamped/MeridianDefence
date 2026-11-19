@@ -12,7 +12,7 @@ live feeds). Live feeds get their first real test on meridian2's VM (`docs/VM-TE
 Square, dense, operator console. Four workspaces, each a 3-column grid (tree | canvas | inspector):
 **COP** (1) map with TRK-A air, TRK-M maritime, EVT-G events + 60-min timeline · **MKT** (2) instruments with history ·
 **ANL** (3) analyst console + standing watches · **INV** (4) cases, subjects, hash-chained audit. SYS holds keys/feeds.
-Codes over words (PRT/COE/ASL/FGT/MAV, CIV/MIL/EMG, PUB/ORG/PRV); `?` opens the key guide. Purple SECURED band and
+Corporate revision (19 Nov 14:10): navy-slate surfaces, 40px title-case panel headers, labels above fields, plain words instead of codes, `?` opens the guide. Purple band with centred SECURED chip and clock;
 tokens (`web/tokens.css`) are shared with the Meridian OS Gotham theme; colour (blue/green/amber/red) only encodes data.
 
 ## 1. Architecture

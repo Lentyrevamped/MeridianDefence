@@ -5,7 +5,7 @@ import { Markets } from "./markets.js";
 import { Analyst } from "./analyst.js";
 import { Osint } from "./osint.js";
 
-const WS = { map: ["COP", "Global situation"], markets: ["MKT", "Markets watch"], analyst: ["ANL", "Analyst desk"], osint: ["INV", "Investigations"], settings: ["SYS", "Keys and feeds"] };
+const WS = { map: ["Operations", "Map, aircraft, ships and events"], markets: ["Markets", "Prices and history"], analyst: ["Analyst", "Questions and standing watches"], osint: ["Investigations", "Cases, subjects and audit log"], settings: ["Settings", "Keys and data feeds"] };
 const feed = { air: "—", sea: "—", evt: "—" };
 const hooks = {
   status(k, ok, why = "") {
@@ -14,7 +14,7 @@ const hooks = {
   },
   show, toast, fly(lat, lon, zoom, label) { show("map"); map.flyTo(lat, lon, zoom || 6); if (label) toast(label); },
   ask: (q) => analyst.ask(q), coords: (s) => (document.getElementById("sb-coords").textContent = s),
-  counts: (d) => (document.getElementById("sb-counts").innerHTML = `A <b>${d.ac.length.toLocaleString()}</b> M <b>${d.ships.length.toLocaleString()}</b> E <b>${d.events.length.toLocaleString()}</b>`),
+  counts: (d) => (document.getElementById("sb-counts").innerHTML = `Aircraft <b>${d.ac.length.toLocaleString()}</b> Ships <b>${d.ships.length.toLocaleString()}</b> Events <b>${d.events.length.toLocaleString()}</b>`),
   feedState: () => feed,
 };
 const map = new WorldMap("map", hooks);
@@ -24,15 +24,15 @@ const osint = new Osint(hooks);
 let current = "map";
 
 function sbFeeds() {
-  const f = (k, c) => `<span class="${feed[k] === "live" ? "live" : ""}">${c}:${feed[k] === "live" ? "OK" : String(feed[k]).toUpperCase().slice(0, 10)}</span>`;
-  document.getElementById("sb-feeds").innerHTML = f("air", "TRK-A") + f("sea", "TRK-M") + f("evt", "EVT-G");
+  const f = (k, c) => `<span class="${feed[k] === "live" ? "live" : "warn"}" title="${esc(String(feed[k]))}"><i></i>${c}</span>`;
+  document.getElementById("sb-feeds").innerHTML = f("air", "Aircraft") + f("sea", "Ships") + f("evt", "Events");
 }
 
 function show(v) {
   current = v;
   document.querySelectorAll(".view").forEach((x) => x.classList.toggle("on", x.id === `v-${v}`));
   document.querySelectorAll(".rail button[data-view]").forEach((b) => b.classList.toggle("on", b.dataset.view === v));
-  document.getElementById("ws-code").textContent = WS[v][0]; document.getElementById("ws-title").textContent = WS[v][1];
+  document.getElementById("ws-title").textContent = WS[v][0]; document.getElementById("ws-sub").textContent = WS[v][1];
   document.getElementById("sb-ws").textContent = WS[v][0];
   if (v === "map") map.resize();
   if (v === "markets" && !markets._loaded) { markets._loaded = true; markets.load(); }
@@ -68,15 +68,11 @@ document.addEventListener("click", closeMenus);
 
 // ---- key guide ----
 const GUIDE = [
-  ["Workspaces", [["COP", "Common operating picture: map, tracks, events"], ["MKT", "Markets: any instrument with history"], ["ANL", "Analyst console and standing watches"], ["INV", "Investigations: cases, subjects, audit"], ["SYS", "Keys and feeds"]]],
-  ["Feeds", [["TRK-A", "Air tracks (ADS-B)"], ["TRK-M", "Maritime tracks (AIS)"], ["EVT-G", "Conflict / unrest events (GDELT, 15 min)"], ["A- M- E-", "Track / event identifiers"]]],
-  ["Event classes", CATS.map(([k, c]) => [c, k])],
-  ["Air classes", AIR.map(([, c, n]) => [c, n])],
-  ["Maritime classes", SHIPS.map(([k, c]) => [c, k])],
-  ["Basemaps", Object.values(BASEMAPS).map((b) => [b.code, b.name])],
-  ["Subjects", [["PUB", "Public figure (linked to Wikidata)"], ["ORG", "Company (linked to Wikidata)"], ["PRV", "Private individual: limited modules"]]],
-  ["Keys", [["1 2 3 4", "Switch workspace"], ["/", "Command line"], ["[  ]", "Left panel / inspector"], ["T", "Timeline"], ["B", "Cycle basemap"], ["H", "World view"], ["R", "Range ring at centre"], ["?", "This guide"]]],
-  ["Command line", [["AAPL  GC=F  BTC-USD", "Open instrument"], ["goto <place|lat,lon>", "Fly"], ["fly <callsign|hex>", "Find aircraft"], ["ship <name|mmsi>", "Find vessel"], ["who <name>", "Add subject to open case"], ["watch <topic>", "Standing watch"], ["ask <q>  or  …?", "Query analyst"]]],
+  ["Workspaces", [["1", "Operations: map with aircraft, ships and conflict events"], ["2", "Markets: any instrument with price history"], ["3", "Analyst: ask questions, set standing watches"], ["4", "Investigations: cases, subjects and audit log"]]],
+  ["Map", [["[  ]", "Hide or show the layer panel and inspector"], ["T", "Hide or show the timeline"], ["B", "Next basemap"], ["H", "World view"], ["R", "Range rings at map centre"]]],
+  ["Event colours", [["Amber", "Protest, coercion"], ["Red", "Assault, fighting, mass violence"], ["Blue aircraft", "Military"], ["Red aircraft", "Emergency squawk 7500/7600/7700"]]],
+  ["Command line", [["AAPL  GC=F  BTC-USD", "Open an instrument"], ["goto <place | lat,lon>", "Move the map"], ["fly <callsign | hex>", "Find an aircraft"], ["ship <name | MMSI>", "Find a vessel"], ["who <name>", "Add a subject to the open case"], ["watch <topic>", "Create a standing watch"], ["ask <question>  or end with ?", "Ask the analyst"], ["sat  ter  drk  off", "Switch basemap"]]],
+  ["General", [["/", "Command line"], ["?", "This guide"], ["Esc", "Close menus and dialogs"]]],
 ];
 document.getElementById("help-body").innerHTML = [GUIDE.filter((_, i) => i % 2 === 0), GUIDE.filter((_, i) => i % 2 === 1)]
   .map((col) => `<section>${col.map(([h, rows]) => `<div class="sect">${esc(h)}</div><dl class="kv">${rows.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl>`).join("")}</section>`).join("");
@@ -108,7 +104,7 @@ cmd.onkeydown = async (e) => {
     }
     if ((h === "fly" || h === "ship") && arg) { show("map"); map.search(arg); return; }
     if (h === "who" && arg) { osint.prefill(arg); return; }
-    if (h === "watch" && arg) { await api("/api/watches", { method: "POST", body: { topic: arg } }); show("analyst"); toast("WATCH added"); return; }
+    if (h === "watch" && arg) { await api("/api/watches", { method: "POST", body: { topic: arg } }); show("analyst"); toast("Watch added"); return; }
     if (h === "ask" || raw.endsWith("?")) { analyst.ask(h === "ask" ? arg : raw); return; }
     if (/^[\^A-Za-z0-9.=-]{1,15}$/.test(raw) && !rest.length) { markets.open(raw); return; }
     analyst.ask(raw);
@@ -130,9 +126,10 @@ document.addEventListener("keydown", (e) => {
 function clocks() {
   const d = new Date();
   document.getElementById("clk-utc").textContent = d.toISOString().slice(11, 19);
+  document.getElementById("band-clock").textContent = d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }).replace(",", "") + "  " + d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
   document.getElementById("clk-loc").textContent = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
 }
-document.getElementById("clk-tz").textContent = " " + (Intl.DateTimeFormat().resolvedOptions().timeZone || "LCL").split("/").pop().replace(/_/g, " ").toUpperCase().slice(0, 10);
+document.getElementById("clk-tz").textContent = " " + (Intl.DateTimeFormat().resolvedOptions().timeZone || "LCL").split("/").pop().replace(/_/g, " ").slice(0, 14);
 clocks(); setInterval(clocks, 1000);
 
 let K = {};
@@ -140,20 +137,20 @@ async function status() {
   try {
     const s = await api("/api/status"); K = s;
     document.getElementById("demo-badge").hidden = !s.demo;
-    document.getElementById("band-mode").textContent = s.demo ? "DEMO DATA // SYNTHETIC" : "OPEN SOURCE // PERSONAL USE";
-    document.getElementById("anl-model").textContent = `${s.model} · ${s.analyst ? "READY" : "NO KEY"}`;
+    document.getElementById("band-mode").textContent = s.demo ? "Demo data" : "Live data";
+    document.getElementById("anl-model").textContent = `${s.model} · ${s.analyst ? "Ready" : "No key set"}`;
     hooks.status("ai", s.analyst, s.analyst ? "" : "needs Claude key");
     if (!s.demo && !s.keys.aisstream) hooks.status("sea", false, "needs aisstream key");
   } catch {}
 }
 async function loadKeys() {
   await status();
-  const desc = { anthropic: "ANL analyst and watches", aisstream: "TRK-M maritime tracks", hibp: "INV breach checks", opensky_user: "TRK-A OpenSky account (optional)", opensky_pass: "TRK-A OpenSky password", opensanctions: "INV sanctions/PEP (phase 2)" };
+  const desc = { anthropic: "Analyst and standing watches", aisstream: "Ship tracks", hibp: "Breach checks", opensky_user: "OpenSky account (optional)", opensky_pass: "OpenSky password (optional)", opensanctions: "Sanctions and PEP checks (phase 2)" };
   document.getElementById("keys").innerHTML = Object.entries(K.keys || {}).map(([k, ok]) =>
-    `<tr><td>${esc(k)}</td><td>${esc(desc[k] || "")}</td><td class="r">${ok ? '<span class="ok">SET</span>' : `<code>meridian-intel keys set ${esc(k)}</code>`}</td></tr>`).join("") +
-    `<tr><td>TRK-M</td><td>aisstream.io</td><td class="r">${esc(K.ships)} · ${(K.ship_msgs || 0).toLocaleString()} msgs</td></tr>
-     <tr><td>EVT-G</td><td>GDELT</td><td class="r">${K.events_err ? esc(K.events_err) : K.events_age != null ? `T−${Math.round(K.events_age / 60)} min` : K.demo ? "demo" : "loading"}</td></tr>
-     <tr><td>ANL</td><td>${esc(K.model)}</td><td class="r">${K.analyst ? '<span class="ok">READY</span>' : "NO KEY"}</td></tr>`;
+    `<tr><td>${esc(k)}</td><td>${esc(desc[k] || "")}</td><td class="r">${ok ? '<span class="ok">Set</span>' : `<code>meridian-intel keys set ${esc(k)}</code>`}</td></tr>`).join("") +
+    `<tr><td>Ships</td><td>aisstream.io</td><td class="r">${esc(K.ships)} · ${(K.ship_msgs || 0).toLocaleString()} msgs</td></tr>
+     <tr><td>Events</td><td>GDELT</td><td class="r">${K.events_err ? esc(K.events_err) : K.events_age != null ? `${Math.round(K.events_age / 60)} min ago` : K.demo ? "demo" : "loading"}</td></tr>
+     <tr><td>Analyst</td><td>${esc(K.model)}</td><td class="r">${K.analyst ? '<span class="ok">Ready</span>' : "No key set"}</td></tr>`;
 }
 status(); setInterval(status, 30000); sbFeeds();
 markets.loadWatchlist(); setInterval(() => markets.loadWatchlist(), 60000);

@@ -11,14 +11,14 @@ export class Analyst {
       e.preventDefault(); const fd = Object.fromEntries(new FormData(e.target));
       await api("/api/watches", { method: "POST", body: fd }); e.target.reset(); toast("Watch added"); this.loadWatches();
     };
-    this._msg("a", "READY. Tools: MKT quotes/history, TRK-A, TRK-M, EVT-G, NWS-G, web search, map control, standing watches.");
+    this._msg("a", "Ready. I can read market quotes and history, aircraft, ships, conflict events and news, search the web, move the map and set standing watches.");
   }
 
   _msg(who, text, wait) {
     const log = document.getElementById("chat-log"), d = document.createElement("div");
     d.className = `msg ${who}${wait ? " wait" : ""}`;
     const t = document.createElement("time"); t.textContent = new Date().toISOString().slice(11, 19) + "Z";
-    const w = document.createElement("span"); w.className = "who"; w.textContent = who === "u" ? "USR" : "ANL";
+    const w = document.createElement("span"); w.className = "who"; w.textContent = who === "u" ? "You" : "Analyst";
     const b = document.createElement("span"); b.className = "body"; b.textContent = text;
     d.append(t, w, b); log.appendChild(d); log.scrollTop = log.scrollHeight;
     return { el: d, set: (s) => { b.textContent = s; d.classList.remove("wait"); } };
@@ -26,7 +26,7 @@ export class Analyst {
 
   async ask(q) {
     this.hooks.show("analyst"); this._msg("u", q);
-    const w = this._msg("a", "QUERYING FEEDS…", true);
+    const w = this._msg("a", "Checking the feeds…", true);
     try {
       const r = await api("/api/ask", { method: "POST", body: { q } });
       w.set(r.answer);
@@ -35,17 +35,17 @@ export class Analyst {
         if (a.type === "watches") this.loadWatches();
       }
       this.hooks.status("ai", !r.needs_key);
-    } catch (e) { w.set(`ERR ${e.message}`); }
+    } catch (e) { w.set(`Error: ${e.message}`); }
   }
 
   async loadWatches() {
     const d = await api("/api/watches");
     const el = document.getElementById("w-list");
-    el.innerHTML = d.watches.length ? d.watches.map((w) => `<div class="card" data-id="${w.id}"><div class="ch"><span class="id">W-${String(w.id).padStart(3, "0")}</span><b>${esc(w.topic)}</b>
-      <button class="mini" data-run>RUN</button><button class="mini" data-del>DEL</button></div>
-      <div class="meta">${esc(w.query)}${w.symbols.length ? " · " + esc(w.symbols.join(",")) : ""} · ${w.last_run ? "T " + ago(w.last_run) : "NOT RUN"}</div>
+    el.innerHTML = d.watches.length ? d.watches.map((w) => `<div class="card" data-id="${w.id}"><div class="ch"><b>${esc(w.topic)}</b>
+      <button class="mini" data-run>Run now</button><button class="mini" data-del>Delete</button></div>
+      <div class="meta">${esc(w.query)}${w.symbols.length ? " · " + esc(w.symbols.join(",")) : ""} · ${w.last_run ? "last run " + ago(w.last_run) : "not run yet"}</div>
       ${w.digests.slice(0, 2).map((g) => `<div class="digest"><time>${new Date(g.ts * 1000).toLocaleString()}</time>${esc(g.body)}</div>`).join("")}</div>`).join("")
-      : `<div class="empty">NO WATCHES${d.analyst ? "" : " · ANL KEY MISSING"}</div>`;
+      : `<div class="empty">No watches yet${d.analyst ? "" : ". The analyst needs a Claude key."}</div>`;
     el.querySelectorAll(".card").forEach((c) => {
       c.querySelector("[data-del]").onclick = async () => { await api(`/api/watches/${c.dataset.id}`, { method: "DELETE" }); this.loadWatches(); };
       c.querySelector("[data-run]").onclick = async (e) => {
