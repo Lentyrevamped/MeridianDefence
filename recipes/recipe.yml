@@ -30,6 +30,7 @@ modules:
       - 40-user-style.sh        # tighter GTK corners per user, Flatpaks included (read-only)
       - 50-daily.sh             # daily driver: apps on first login, Drive sync timer, keep-screen-on, Brave policy
       - 60-ledger-login.sh      # Ledger-only GDM/lock screen sign-in, active only after `meridian-ledger enroll`; password stays at the TTY
+      - 61-ledger-only-gdm.sh    # Ledger users: GDM fingerprint/smartcard services refuse (no bypass); others stock
       - 90-verify.sh            # build fails loudly if a stable piece is missing; fragile pieces only warn
 
   - type: signing                # signs the image (cosign) and adds our key to the image's container policy

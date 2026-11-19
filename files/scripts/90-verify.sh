@@ -21,3 +21,10 @@ if grep -qs meridian /{etc,usr/lib}/pam.d/{login,sudo,polkit-1,run0,system-auth,
 fi
 echo "verify: text console, sudo/run0, polkit untouched (password rescue)"
 semodule -l 2>/dev/null | grep -q '^meridian_ledger' && echo "verify: SELinux Ledger module ON" || echo "WARN verify: SELinux Ledger module OFF"
+for svc in gdm-fingerprint gdm-smartcard; do
+  f=/etc/pam.d/$svc; [ -f "$f" ] || f=/usr/lib/pam.d/$svc; [ -f "$f" ] || continue
+  if grep -q ledger-login-enabled /etc/pam.d/gdm-password /usr/lib/pam.d/gdm-password 2>/dev/null && ! grep -q ledger-login-enabled "$f"; then
+    echo "verify: FAIL, $svc would bypass Ledger-only sign-in"; exit 1
+  fi
+done
+echo "verify: no fingerprint/smartcard bypass at GDM for Ledger users"

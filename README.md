@@ -33,6 +33,8 @@ signs `SHA256("MERIDIAN-AUTH-V1" || request)` and the signature is checked again
 (root-owned, not group/world writable, else refused). The device's answer alone is never trusted. A small SELinux rule lets GDM
 (xdm_t) open the Ledger's hidraw node. Don't register a computer on the Ledger (registered-computers mode refuses these requests).
 Since no password is typed at GDM, the GNOME keyring asks for it once after sign-in.
+No way around it at GDM: for Ledger users the gdm-fingerprint and gdm-smartcard services refuse at once (same gate);
+a fingerprint set up for run0/sudo keeps working there.
 
 ## Daily driver (meridian2, from the 18 Nov setup record)
 
