@@ -101,10 +101,13 @@ class HidrawTransport:
         os.close(self._fd)
 
 
-def open_ledger(say, wait: float = WAIT_FOR_DEVICE):
-    """Wait for the Ledger with the Meridian app open. Returns a transport."""
+def open_ledger(say, wait: float = WAIT_FOR_DEVICE, still_wanted=None):
+    """Wait for the Ledger with the Meridian app open. Returns a transport.
+    still_wanted(): checked while waiting; False stops at once (e.g. `meridian-ledger disable` ran meanwhile)."""
     deadline, told = time.monotonic() + wait, False
     while True:
+        if still_wanted is not None and not still_wanted():
+            raise LoginError("Ledger sign-in was turned off")
         path = _ledger_hidraw()
         if path:
             t = HidrawTransport(path)
@@ -211,7 +214,7 @@ def login(user: str, say, transport=None) -> None:
         raise LoginError("No Ledger enrolled for this user")
     slot, pub = enr
     own = transport is None
-    t = transport or open_ledger(say)
+    t = transport or open_ledger(say, still_wanted=lambda: enrollment_path(user).exists())
     try:
         verify_with_ledger(t, slot, pub, say)
     finally:

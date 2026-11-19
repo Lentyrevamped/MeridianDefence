@@ -91,6 +91,10 @@ export default class MeridianLedger extends Extension {
                 else if (msg.startsWith('Rejected on Ledger')) card.bad();
                 else if (msg) card.hide();
                 if (this._message) this._message.opacity = ledgerText ? 0 : 255;    // stock label stays as the fallback
+                // Back on the password (Ledger turned off mid-attempt): a late Ledger line must not sit under the field.
+                if (this._meridianLedger === false && this._entryArea?.visible && (isProgress(msg) || isFailure(msg))) {
+                    card.hide(); if (this._message) this._message.opacity = 0;
+                }
             })();
             return r;
         });
