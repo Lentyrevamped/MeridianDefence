@@ -34,6 +34,7 @@ stage { font-family: "Noto Sans", Inter, sans-serif; }
 /* ---------------------------------------------------------------- popovers beside the taskbar */
 .popup-menu-boxpointer, .candidate-popup-boxpointer { -arrow-border-radius: 5px; -arrow-background-color: #1F2022; -arrow-border-width: 1px; -arrow-border-color: #3C3E43; -arrow-base: 0; -arrow-rise: 0; }
 .meridian-popover { -boxpointer-gap: 12px; }
+.meridian-popover-bar { -boxpointer-gap: 8px; }
 .popup-menu-content, .candidate-popup-content { background-color: #1F2022; border: 1px solid #3C3E43; border-radius: 5px; box-shadow: 0 24px 60px rgba(0,0,0,0.5); color: #E6E6E6; padding: 6px; }
 .popup-menu-item { border-radius: 3px; margin: 0; padding: 7px 12px; spacing: 10px; }
 .popup-menu-item:hover, .popup-menu-item:focus, .popup-menu-item:active { background-color: rgba(255,255,255,0.06); color: #E6E6E6; }
@@ -78,7 +79,12 @@ stage { font-family: "Noto Sans", Inter, sans-serif; }
 .meridian-qs .quick-settings-grid { spacing-rows: 14px; spacing-columns: 12px; }
 .meridian-qs .quick-toggle, .meridian-qs .quick-toggle-has-menu { min-width: 0; max-width: none; min-height: 0; border-radius: 3px; background-color: transparent; box-shadow: none; padding: 0; color: #E6E6E6; }
 .meridian-qs .quick-toggle:checked { background-color: transparent; }
-.meridian-qs-cell { spacing: 7px; }
+.meridian-qs .quick-toggle:hover, .meridian-qs .quick-toggle:focus, .meridian-qs .quick-toggle:active, .meridian-qs .quick-toggle:checked:hover,
+.meridian-qs .quick-toggle-has-menu:hover, .meridian-qs .quick-toggle-has-menu:checked { background-color: transparent; box-shadow: none; }
+/* the stock rules pad "quick-toggle > StBoxLayout"; after the re-layout that box is our cell */
+.meridian-qs .quick-toggle.meridian-qs-plain > StBoxLayout.meridian-qs-cell, .meridian-qs .quick-toggle.meridian-qs-plain:ltr > StBoxLayout.meridian-qs-cell,
+.meridian-qs .meridian-qs-split > StBoxLayout.meridian-qs-cell, .meridian-qs .meridian-qs-split:ltr > StBoxLayout.meridian-qs-cell { padding: 0; spacing: 7px; }
+.meridian-qs .meridian-qs-split .meridian-qs-tile > .quick-toggle:ltr > StBoxLayout, .meridian-qs .meridian-qs-split .meridian-qs-tile > .quick-toggle > StBoxLayout { padding: 0; }
 .meridian-qs-label { font-size: 12px; color: #E6E6E6; text-align: center; }
 /* plain tile */
 .meridian-qs-plain .meridian-qs-tile { width: 96px; height: 48px; padding: 0; border-radius: 3px; background-color: rgba(255,255,255,0.065); border: 1px solid rgba(255,255,255,0.07); transition-duration: 120ms; }

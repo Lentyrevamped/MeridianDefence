@@ -54,7 +54,7 @@ function moveTo(actor, parent, index = -1) {
 function besideTaskbar(inj, menu, taskbar, alignment) {
     const bp = menu._boxPointer;
     bp._arrowSide = bp._userArrowSide = St.Side.LEFT;
-    bp.add_style_class_name('meridian-popover');
+    bp.add_style_class_name('meridian-popover-bar');
     inj.overrideMethod(bp, 'setPosition', orig => function (_source, _align) {
         orig.call(this, taskbar, alignment);
         this.setSourceAlignment(alignment);
@@ -512,7 +512,7 @@ class Taskbar {
         this._inj.clear();
         for (const m of [this._qs?.menu, Main.panel.statusArea.dateMenu?.menu]) {
             const bp = m?._boxPointer;
-            if (bp) { bp._arrowSide = bp._userArrowSide = St.Side.TOP; bp.remove_style_class_name('meridian-popover'); }
+            if (bp) { bp._arrowSide = bp._userArrowSide = St.Side.TOP; bp.remove_style_class_name('meridian-popover-bar'); }
         }
         this._restoreIndicators();
         this._ctx?.destroy();
