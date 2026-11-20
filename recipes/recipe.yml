@@ -17,6 +17,12 @@ modules:
       packages:
         - rclone                 # Google Drive two-way sync (meridian-drive)
         - python3-cryptography   # Ledger signature check (meridian-ledger, GDM sign-in)
+        - i2c-tools                    # speakers: probes amps 2-4 of the MAX98390 array (meridian-speakers.service)
+        - alsa-sof-firmware            # speakers/mic: SOF DSP firmware (normally already in the base)
+        - libcamera                    # camera: OV02C10 via libcamera's Simple pipeline + software ISP
+        - libcamera-ipa
+        - libcamera-tools              # `cam -l` to check the camera
+        - pipewire-plugin-libcamera    # camera in PipeWire: Snapshot, browsers, Discord through the camera portal
 
   - type: gschema-overrides
     include:
@@ -25,6 +31,7 @@ modules:
   - type: script
     scripts:
       - 10-os-release.sh        # "Meridian OS" name (About page, boot menu entries), keeps ID=secureblue
+      - 15-kmods.sh             # signed speaker + camera modules (load once the Meridian MOK is enrolled), camera userspace; before the initramfs rebuild
       - 20-plymouth.sh          # boot splash + disk PIN prompt (stock TPM+PIN unlock), initramfs rebuilt; falls back to stock theme on any error
       - 30-gnome-extension.sh   # Ledger sign-in card + corporate shell style; each enabled only if it declares the image's GNOME version
       - 40-user-style.sh        # corporate GTK style per user (navy, square, blue accent), Flatpaks included (read-only)

@@ -1,0 +1,16 @@
+[Unit]
+Description=Meridian OS: create I2C devices for the MAX98390 speaker amplifiers
+Documentation=file:///usr/share/meridian/kmods/README
+# Only when this kernel carries the signed Meridian speaker module (skipped otherwise, stock audio stays).
+ConditionPathExists=/usr/lib/modules/%v/updates/meridian/snd-hda-scodec-max98390-i2c.ko
+After=systemd-modules-load.service
+Before=sound.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/libexec/meridian/max98390-hda-i2c-setup start
+ExecStop=/usr/libexec/meridian/max98390-hda-i2c-setup stop
+
+[Install]
+WantedBy=sound.target

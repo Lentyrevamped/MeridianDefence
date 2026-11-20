@@ -10,32 +10,55 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref || github.run_id }}
   cancel-in-progress: true
 jobs:
+  # One-time setup of the Meridian MOK that signs our kernel modules (no-op once kmods/mok/ exists).
+  # Its own job so only this short step ever holds a token that can write to the repository.
+  mok:
+    name: Meridian module signing key
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+      - name: Prepare signing key
+        env:
+          RAW_KEY: ${{ secrets.SIGNING_SECRET }}
+        run: .github/scripts/cosign-key.sh
+      - name: Create the MOK if missing
+        run: .github/scripts/mok-bootstrap.sh
+
   build:
     name: Build and sign Meridian OS
+    needs: mok
+    if: ${{ !cancelled() && (needs.mok.result == 'success' || needs.mok.result == 'skipped') }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
       id-token: write
     steps:
-      # A key pasted into the GitHub secrets form can pick up CRLF line endings or stray spaces, which cosign rejects
-      # ("invalid pem block"). Normalise it, mask every line, and report only its shape (never its content).
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.sha || github.ref }}   # branch head: includes a MOK commit made by the job above
+          persist-credentials: false
+
       - name: Prepare signing key
         env:
           RAW_KEY: ${{ secrets.SIGNING_SECRET }}
-        run: |
-          set -euo pipefail
-          key=$(printf '%s\n' "$RAW_KEY" | tr -d '\r' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' -e '/^$/d')
-          while IFS= read -r line; do [ -n "$line" ] && echo "::add-mask::$line"; done <<<"$key"
-          raw_cr=$(printf '%s' "$RAW_KEY" | tr -cd '\r' | wc -c)
-          echo "signing key: $(printf '%s\n' "$key" | wc -l) lines, CR removed: $raw_cr, header: $(printf '%s\n' "$key" | head -1 | grep -o 'BEGIN [A-Z ]*' || echo none)"
-          printf '%s\n' "$key" | head -1 | grep -q -- '-----BEGIN ENCRYPTED .* PRIVATE KEY-----' || { echo "::error::SIGNING_SECRET is not a cosign private key"; exit 1; }
-          { echo 'MERIDIAN_COSIGN_KEY<<MERIDIAN_EOF'; printf '%s\n' "$key"; echo 'MERIDIAN_EOF'; } >> "$GITHUB_ENV"
+        run: .github/scripts/cosign-key.sh
+
+      # Speakers (MAX98390 x4) and camera (OV02C10 26 MHz, ipu-bridge rotation): built for the base image's kernel,
+      # signed with the Meridian MOK, staged under files/system/usr/lib/modules/<kernel>/updates/meridian/.
+      - name: Build signed kernel modules
+        run: .github/scripts/kmods.sh
 
       - name: Build image
         uses: blue-build/github-action@v1.14
         with:
           recipe: recipe.yml
+          skip_checkout: true
           cosign_private_key: ${{ env.MERIDIAN_COSIGN_KEY }}
           registry_token: ${{ github.token }}
           registry_namespace: lentyrevamped   # lowercase: signature policy scope + registries.d name must match the pulled ref

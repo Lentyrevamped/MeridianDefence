@@ -29,3 +29,8 @@ for svc in gdm-fingerprint gdm-smartcard; do
   fi
 done
 echo "verify: no fingerprint/smartcard bypass at GDM for Ledger users"
+K=$(ls /usr/lib/modules | sort -V | tail -1)
+for m in snd-hda-scodec-max98390 snd-hda-scodec-max98390-i2c ov02c10 ipu-bridge; do
+  [ -f "/usr/lib/modules/$K/updates/meridian/$m.ko" ] && echo "verify: driver $m signed + staged" || echo "WARN verify: driver $m missing (stock driver)"
+done
+test -s /usr/share/meridian/mok/meridian-mok.der && echo "verify: Meridian MOK certificate present" || echo "WARN verify: Meridian MOK certificate missing"

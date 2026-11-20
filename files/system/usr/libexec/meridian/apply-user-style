@@ -9,4 +9,13 @@ for v in gtk-4.0 gtk-3.0; do
   if [ ! -e "$dst" ] || head -n1 "$dst" | grep -q '^/\* Meridian OS:'; then cp -f "$src" "$dst"; fi
 done
 command -v flatpak >/dev/null && flatpak override --user --filesystem=xdg-config/gtk-4.0:ro --filesystem=xdg-config/gtk-3.0:ro 2>/dev/null
+# Camera in Chrome/Brave (Flatpak): use the PipeWire camera (libcamera) instead of raw V4L2, which this laptop's IPU6
+# camera cannot serve. Adds the feature to an existing --enable-features line or as a new line; never removes anything.
+for f in com.google.Chrome/config/chrome-flags.conf com.brave.Browser/config/brave-flags.conf; do
+  p="$HOME/.var/app/$f"
+  [ -f "$p" ] && grep -q 'WebRtcPipeWireCamera' "$p" && continue
+  mkdir -p "$(dirname "$p")"
+  if [ -f "$p" ] && grep -q '^--enable-features=' "$p"; then sed -i '0,/^--enable-features=/s//--enable-features=WebRtcPipeWireCamera,/' "$p"
+  else echo '--enable-features=WebRtcPipeWireCamera' >> "$p"; fi
+done
 exit 0
