@@ -9,7 +9,7 @@ if [ ! -s "$ENC" ] || [ ! -s "$DER" ] || [ -z "${MERIDIAN_MOK_PASS:-}" ]; then
   echo "::warning::kmods: no Meridian MOK available, image built without the speaker/camera modules"; exit 0
 fi
 t=$(mktemp -d "$RUNNER_TEMP/mok.XXXXXX"); chmod 700 "$t"; out=$(mktemp -d "$RUNNER_TEMP/kout.XXXXXX")
-trap 'shred -fu "$t"/meridian-mok.key 2>/dev/null; rm -rf "$t"' EXIT
+trap 'shred -fu "$t"/meridian-mok.key 2>/dev/null; rm -rf "$t" 2>/dev/null; true' EXIT
 openssl pkcs8 -in "$ENC" -passin env:MERIDIAN_MOK_PASS -out "$t/meridian-mok.key"
 [ "$(openssl pkey -in "$t/meridian-mok.key" -pubout)" = "$(openssl x509 -inform DER -in "$DER" -noout -pubkey)" ] || { echo "::error::MOK key does not match its certificate"; exit 1; }
 cp "$DER" "$t/meridian-mok.der"; chmod 0444 "$t"/*
@@ -22,3 +22,4 @@ sudo chown -R "$(id -u):$(id -g)" "$out"
 cp -a "$out/." files/system/
 { echo "### Meridian kernel modules"; echo '```'; cat "$out/usr/share/meridian/kmods/status"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
 find files/system/usr/lib/modules -name '*.ko' -printf '%P %s bytes\n' 2>/dev/null || true
+exit 0
