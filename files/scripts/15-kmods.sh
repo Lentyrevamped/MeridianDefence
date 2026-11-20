@@ -23,7 +23,7 @@ if ls "$D"/*.ko >/dev/null 2>&1; then
   depmod -a "$KVER"
   for m in snd-hda-scodec-max98390 ov02c10 ipu-bridge; do
     p=$(modinfo -k "$KVER" -F filename "$m" 2>/dev/null)
-    case "$p" in "$D"/*) echo "kmods: $m resolves to Meridian build";; "") ;; *) echo "WARN kmods: $m resolves to $p";; esac
+    case "${p#/usr}" in "${D#/usr}"/*) echo "kmods: $m resolves to Meridian build";; "") ;; *) echo "WARN kmods: $m resolves to $p";; esac
   done
 else
   echo "WARN kmods: no Meridian modules in this build (stock speaker/camera drivers)"

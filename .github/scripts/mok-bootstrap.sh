@@ -10,7 +10,7 @@ ENC=kmods/mok/meridian-mok.key.enc
 DER=files/system/usr/share/meridian/mok/meridian-mok.der
 if [ -s "$ENC" ] && [ -s "$DER" ]; then echo "MOK exists: $(openssl x509 -inform DER -in "$DER" -noout -fingerprint -sha256)"; exit 0; fi
 : "${MERIDIAN_MOK_PASS:?}"
-t=$(mktemp -d "$RUNNER_TEMP/mok.XXXXXX"); chmod 700 "$t"; trap 'shred -u "$t"/* 2>/dev/null; rm -rf "$t"' EXIT
+t=$(mktemp -d "$RUNNER_TEMP/mok.XXXXXX"); chmod 700 "$t"; trap 'shred -u "$t"/* 2>/dev/null || true; rm -rf "$t" || true' EXIT
 cat > "$t/x509.cnf" <<'CNF'
 [ req ]
 distinguished_name = dn
