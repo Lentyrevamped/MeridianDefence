@@ -1,6 +1,6 @@
 [Plymouth Theme]
 Name=Meridian
-Description=Meridian OS boot splash, disk PIN and Ledger confirmation
+Description=Meridian OS boot splash and disk PIN
 ModuleName=script
 
 [script]

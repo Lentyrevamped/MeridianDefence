@@ -3,6 +3,8 @@ Description=Meridian OS: apply tighter GTK corners for this user (never overwrit
 After=graphical-session-pre.target
 
 [Service]
+# People only: the sign-in screen's gdm-greeter user manager skips this (condition, not a failure)
+ExecCondition=/usr/libexec/meridian/is-person
 Type=oneshot
 ExecStart=/usr/libexec/meridian/apply-user-style
 

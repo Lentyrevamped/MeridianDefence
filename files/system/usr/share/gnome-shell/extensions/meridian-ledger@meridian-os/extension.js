@@ -1,16 +1,17 @@
 // Meridian Ledger sign-in (GNOME Shell 51). Presentation only: the Ledger check itself runs in PAM / the initrd.
 // Scope: login screen and lock screen only. Admin prompts (polkit) stay stock and use the password.
 // Contract with PAM (plain text, so stock GNOME shows it readably when this extension is off):
-//   info  "Confirm on your Ledger · code 3387 45BE 5C20" -> card with the 12-hex code (as the Ledger shows it), checklist step 2
+//   info  "Confirm on your Ledger · code 3387 45BE 5C20" -> the 12-hex code (as the Ledger shows it), step 2 of 3
 //   info  "Approved on Ledger"                         -> approved state
 //   info  "Rejected on Ledger"                         -> rejected state
-//   info  "Connect your Ledger and open the Meridian app" -> card, step 1 (waiting for the device)
+//   info  "Connect your Ledger and open the Meridian app" -> step 1 of 3 (waiting for the device)
 //   info  any other line containing "Ledger"           -> a failure: shown as an error instead of GDM's generic
 //                                                         "Sorry, password authentication didn't work"
 // Users with /etc/meridian/ledger/<user>.json sign in with the Ledger only, so the password field is not shown
 // (it comes back if PAM ever asks a question). Without this extension the password field is visible but refused.
 // Every hook is wrapped: on any error we log once and fall back to the stock text.
 import GLib from 'gi://GLib';
+import Gio from 'gi://Gio';
 import St from 'gi://St';
 import Clutter from 'gi://Clutter';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
@@ -36,55 +37,51 @@ function filterMessage(v, args) {
 let warned = false;
 const safe = (fn, fallback) => (...a) => { try { return fn(...a); } catch (e) { if (!warned) { warned = true; console.warn(`[meridian] ${e}\n${e.stack}`); } return fallback?.(...a); } };
 
-// Corporate card: "Confirm sign-in on your Ledger", the 12-hex code, a 3-step checklist and a status bar.
-const STEPS = ['Ledger connected', 'Code matches', 'Approved on device'];
-const HINTS = ['Nano Gen5 · Meridian app', 'Compare with the device screen', 'Hold both buttons'];
+// Graphite column (no card): one status line, the 12-hex code between hairlines, a 3-segment step line and a help
+// line. Text swaps crossfade over 200 ms; the column fades in with an 8 px rise. No shake, no glow.
+const STATUS = {
+    nodev: 'Connect your Ledger and open the Meridian app',
+    code: 'Confirm on your Ledger · check the code matches',
+    ok: 'Approved on Ledger',
+    bad: 'Rejected on Ledger',
+};
 class LedgerCard {
     constructor() {
-        const V = Clutter.Orientation.VERTICAL;
-        this.actor = new St.BoxLayout({orientation: V, style_class: 'meridian-card', x_expand: true, visible: false});
-        this._hint = new St.Label({style_class: 'meridian-label', text: 'Confirm sign-in on your Ledger'});
-        this._chip = new St.BoxLayout({style_class: 'meridian-code', x_expand: true});
-        this._g = [0, 1, 2].map(() => new St.Label({style_class: 'meridian-group', x_expand: true, x_align: Clutter.ActorAlign.CENTER}));
-        this._g.forEach(g => this._chip.add_child(g));
-        const head = new St.BoxLayout({style_class: 'meridian-check-head', x_expand: true});
-        head.add_child(new St.Label({style_class: 'meridian-check-title', text: 'Sign-in checklist', x_expand: true}));
-        this._count = new St.Label({style_class: 'meridian-check-count', text: '1/3 complete'});
-        head.add_child(this._count);
-        this._list = new St.BoxLayout({orientation: V, style_class: 'meridian-check', x_expand: true});
-        this._rows = STEPS.map((t, i) => {
-            const row = new St.BoxLayout({style_class: 'meridian-check-row', x_expand: true});
-            const mark = new St.Bin({style_class: 'meridian-mark', y_align: Clutter.ActorAlign.CENTER});
-            const icon = new St.Icon({icon_size: 12, icon_name: 'object-select-symbolic', visible: false});
-            mark.set_child(icon);
-            row.add_child(mark);
-            row.add_child(new St.Label({style_class: 'meridian-check-text', text: t, x_expand: true, y_align: Clutter.ActorAlign.CENTER}));
-            row.add_child(new St.Label({style_class: 'meridian-check-hint', text: HINTS[i], y_align: Clutter.ActorAlign.CENTER}));
-            this._list.add_child(row);
-            return {row, mark, icon};
-        });
-        this._bar = new St.Label({style_class: 'meridian-bar', text: 'Waiting for approval on Ledger', x_expand: true});
-        for (const c of [this._hint, this._chip, head, this._list, this._bar]) this.actor.add_child(c);
+        const V = Clutter.Orientation.VERTICAL, C = Clutter.ActorAlign.CENTER;
+        this.actor = new St.BoxLayout({orientation: V, style_class: 'meridian-ledger', x_expand: true, visible: false});
+        this._status = new St.Label({style_class: 'meridian-ledger-status', x_align: C});
+        this._code = new St.Label({style_class: 'meridian-ledger-code', x_align: C, x_expand: true});
+        this._codeRow = new St.Bin({style_class: 'meridian-ledger-code-row', x_expand: true, child: this._code});
+        this._steps = new St.BoxLayout({style_class: 'meridian-ledger-steps', x_align: C});
+        this._seg = [0, 1, 2].map(() => { const w = new St.Widget({style_class: 'meridian-ledger-seg'}); this._steps.add_child(w); return w; });
+        this._help = new St.Label({style_class: 'meridian-ledger-help', x_align: C});
+        for (const c of [this._status, this._codeRow, this._steps, this._help]) this.actor.add_child(c);
     }
-    // step i: 'done' | 'on' | 'off' | 'bad'
-    _set(states, bar, barClass, count) {
-        states.forEach((st, i) => {
-            const r = this._rows[i];
-            for (const c of ['done', 'on', 'bad']) r.mark.remove_style_class_name(c);
-            if (st !== 'off') r.mark.add_style_class_name(st);
-            r.icon.visible = st === 'done' || st === 'bad';
-            r.icon.icon_name = st === 'bad' ? 'window-close-symbolic' : 'object-select-symbolic';
-        });
-        this._count.text = `${states.filter(x => x === 'done').length}/3 complete`;
-        this._bar.text = bar;
-        for (const c of ['ok', 'bad']) this._bar.remove_style_class_name(c);
-        if (barClass) this._bar.add_style_class_name(barClass);
+    _text(label, text) {
+        if (label.text === text) return;
+        if (!label.mapped || !St.Settings.get().enable_animations) { label.text = text; return; }
+        label.remove_all_transitions();
+        label.ease({opacity: 0, duration: 100, mode: Clutter.AnimationMode.EASE_IN_CUBIC, onComplete: () => {
+            label.text = text; label.ease({opacity: 255, duration: 100, mode: Clutter.AnimationMode.EASE_OUT_CUBIC});
+        }});
     }
-    _reveal() { if (!this.actor.visible) { this.actor.opacity = 0; this.actor.show(); this.actor.ease({opacity: 255, duration: 150, mode: Clutter.AnimationMode.LINEAR}); } }
-    nodev() { this._g.forEach(g => { g.text = '····'; }); this._set(['on', 'off', 'off'], 'Connect your Ledger and open the Meridian app', null); this._reveal(); }
-    show(groups) { groups.forEach((t, i) => { this._g[i].text = t; }); this._chip.remove_style_class_name('ok'); this._set(['done', 'on', 'off'], 'Waiting for approval on Ledger', null); this._reveal(); }
-    ok() { this._chip.add_style_class_name('ok'); this._set(['done', 'done', 'done'], 'Approved · Signing in', 'ok'); }
-    bad() { this._set(['done', 'done', 'bad'], 'Rejected on Ledger', 'bad'); }
+    // segment i: 'done' | 'on' | 'off' | 'bad'
+    _set(states, status, help) {
+        states.forEach((st, i) => { for (const c of ['done', 'on', 'bad']) this._seg[i].remove_style_class_name(c); if (st !== 'off') this._seg[i].add_style_class_name(st); });
+        this._text(this._status, status);
+        this._text(this._help, help);
+    }
+    _reveal() {
+        if (this.actor.visible) return;
+        this.actor.show();
+        if (!St.Settings.get().enable_animations) return;
+        this.actor.opacity = 0; this.actor.translation_y = 8;
+        this.actor.ease({opacity: 255, translation_y: 0, duration: 320, mode: Clutter.AnimationMode.EASE_OUT_CUBIC});
+    }
+    nodev() { this._code.text = '···· ···· ····'; this._code.add_style_class_name('unknown'); this._set(['on', 'off', 'off'], STATUS.nodev, 'Step 1 of 3'); this._reveal(); }
+    show(groups) { this._code.remove_style_class_name('unknown'); this._text(this._code, groups.join(' ')); this._set(['done', 'on', 'off'], STATUS.code, 'Step 2 of 3'); this._reveal(); }
+    ok() { this._set(['done', 'done', 'done'], STATUS.ok, 'Signing in'); }
+    bad() { this._set(['done', 'done', 'bad'], STATUS.bad, 'Try again, or use the password at the text console'); }
     hide() { this.actor.hide(); }
     destroy() { this.actor.destroy(); }
 }
@@ -93,6 +90,7 @@ export default class MeridianLedger extends Extension {
     enable() {
         this._inj = new InjectionManager();
         const cards = this._cards = new Set();
+        const marks = this._marks = new Set();
         // Login screen and lock screen both use AuthPrompt.setMessage for PAM info/error text.
         this._inj.overrideMethod(AuthPrompt.AuthPrompt.prototype, 'setMessage', orig => function (message, type, wiggle) {
             const r = orig.call(this, message, type, wiggle);
@@ -131,6 +129,11 @@ export default class MeridianLedger extends Extension {
             safe(() => {
                 const user = params?.userName ?? (this._mode === AuthPrompt.AuthPromptMode.UNLOCK_ONLY ? GLib.get_user_name() : null);
                 this._meridianLedger = enrolled(user);
+                if (!this._meridianMark) {
+                    this._meridianMark = new St.Icon({gicon: Gio.FileIcon.new(Gio.File.new_for_path('/usr/share/meridian/mark.svg')), icon_size: 20, style_class: 'meridian-ledger-mark', x_align: Clutter.ActorAlign.CENTER, opacity: 153});
+                    this.insert_child_at_index(this._meridianMark, 0);
+                    marks.add(this._meridianMark);
+                }
                 if (this._meridianLedger) this._entryArea?.hide();
             })();
             return orig.call(this, params);
@@ -150,7 +153,7 @@ export default class MeridianLedger extends Extension {
         }
     }
 
-    // Greeter background = boot screen background (navy wallpaper with the corner mark), via a style class on #lockDialogGroup.
+    // Greeter background = the Graphite wallpaper with a 35 % dim, via a style class on #lockDialogGroup.
     _greeterSurface() {
         const find = (a, depth) => {
             if (!a || depth > 6) return null;
@@ -169,6 +172,8 @@ export default class MeridianLedger extends Extension {
         this._inj?.clear(); this._inj = null;
         for (const c of this._cards ?? []) safe(() => c.destroy())();
         this._cards = null;
+        for (const m of this._marks ?? []) safe(() => m.destroy())();
+        this._marks = null;
         this._greeterGroup?.remove_style_class_name('meridian-greeter'); this._greeterGroup = null;
     }
 }

@@ -3,24 +3,28 @@
 color-scheme='prefer-dark'
 accent-color='blue'
 clock-show-weekday=true
+clock-format='24h'
+font-name='Noto Sans 10.5'
+document-font-name='Noto Sans 10.5'
+monospace-font-name='Noto Sans Mono 10.5'
 
 [org.gnome.desktop.background]
-picture-uri='file:///usr/share/backgrounds/meridian/meridian-light.png'
-picture-uri-dark='file:///usr/share/backgrounds/meridian/meridian-dark.png'
+picture-uri='file:///usr/share/backgrounds/meridian/meridian-graphite.png'
+picture-uri-dark='file:///usr/share/backgrounds/meridian/meridian-graphite.png'
 picture-options='zoom'
-primary-color='#0E141B'
+primary-color='#141414'
 
 [org.gnome.desktop.screensaver]
-picture-uri='file:///usr/share/backgrounds/meridian/meridian-dark.png'
+picture-uri='file:///usr/share/backgrounds/meridian/meridian-graphite.png'
 picture-options='zoom'
-primary-color='#0E141B'
+primary-color='#141414'
 
 [org.gnome.login-screen]
 logo=''
 
-# Dock (default only; a user's own dock order is kept)
+# Taskbar pins (default only; a user's own pins are kept)
 [org.gnome.shell]
-favorite-apps=['com.google.Chrome.desktop', 'com.brave.Browser.desktop', 'org.meridian.ClaudeWeb.desktop', 'dev.vencord.Vesktop.desktop', 'com.spotify.Client.desktop', 'org.gnome.Nautilus.desktop', 'org.gnome.Ptyxis.desktop', 'org.meridian.DriveSync.desktop', 'io.github.kolunmi.Bazaar.desktop']
+favorite-apps=['org.gnome.Nautilus.desktop', 'org.gnome.Ptyxis.desktop', 'com.google.Chrome.desktop', 'com.brave.Browser.desktop', 'org.meridian.ClaudeWeb.desktop', 'dev.vencord.Vesktop.desktop', 'com.spotify.Client.desktop', 'org.gnome.Settings.desktop']
 
 # Terminal (Ptyxis): copy/paste on Ctrl+C / Ctrl+V like Windows. Users can change it in Ptyxis > Keyboard Shortcuts.
 [org.gnome.Ptyxis.Shortcuts]

@@ -1,12 +1,16 @@
-/* Meridian OS: corporate style for GTK3 apps (Adwaita-dark). Navy surfaces, square panels, blue accent.
+/* Meridian OS: Graphite style for GTK3 apps (Adwaita-dark). 5 px windows, 3 px controls, steel blue accent.
    Unknown selectors are ignored; delete ~/.config/gtk-3.0/gtk.css to go stock. */
-@define-color theme_bg_color #0E141B; @define-color theme_fg_color #E1E7EE;
-@define-color theme_base_color #121A23; @define-color theme_text_color #E1E7EE;
-@define-color theme_selected_bg_color #2F6FD0; @define-color theme_selected_fg_color #ffffff;
-@define-color insensitive_bg_color #141C25; @define-color borders #2A3846; @define-color unfocused_borders #222E3B;
-window, .background { background-color: #0E141B; color: #E1E7EE; }
-headerbar, .titlebar { background: #18212C; border-color: #2A3846; box-shadow: none; }
-decoration, window.csd, .titlebar, headerbar, .window-frame { border-radius: 0; }
-button, entry, spinbutton, combobox button, .linked > button { border-radius: 2px; }
-menu, .menu, .context-menu, popover, tooltip, .tooltip { border-radius: 0; }
-button.titlebutton, .titlebutton { border-radius: 2px; }
+@define-color theme_bg_color #1A1B1C; @define-color theme_fg_color #E6E6E6;
+@define-color theme_base_color #1A1B1C; @define-color theme_text_color #E6E6E6;
+@define-color theme_selected_bg_color #3D8BFF; @define-color theme_selected_fg_color #0B0C0D;
+@define-color insensitive_bg_color #1C1D1F; @define-color borders #303236; @define-color unfocused_borders #2A2B2E;
+window, .background { background-color: #1A1B1C; color: #E6E6E6; }
+headerbar, .titlebar { background: #1F2022; border-color: #303236; box-shadow: inset 0 -1px #303236; min-height: 38px; }
+decoration, window.csd, .window-frame, .titlebar, headerbar { border-radius: 5px 5px 0 0; }
+window.csd decoration { border-radius: 5px; }
+window.maximized decoration, window.tiled decoration, .maximized .titlebar, .tiled .titlebar { border-radius: 0; }
+button, entry, spinbutton, combobox button, .linked > button { border-radius: 3px; }
+menu, .menu, .context-menu, popover, tooltip, .tooltip { border-radius: 5px; }
+button.titlebutton, .titlebutton { border-radius: 0; min-width: 44px; }
+button.titlebutton.close:hover, .titlebutton.close:hover { background: #C42B1C; color: #ffffff; }
+link, *:link { color: #3D8BFF; }
