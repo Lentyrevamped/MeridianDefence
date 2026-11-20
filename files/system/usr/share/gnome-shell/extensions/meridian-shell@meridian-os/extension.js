@@ -74,7 +74,7 @@ function besideTaskbar(inj, menu, taskbar, alignment) {
 class Tip {
     constructor() {
         this.actor = new St.Label({style_class: 'meridian-tip', visible: false});
-        Main.layoutManager.addTopChrome(this.actor, {affectsInputRegion: false});
+        Main.layoutManager.addTopChrome(this.actor);
     }
     attach(button, textFn) {
         button.connect('notify::hover', () => {
@@ -323,7 +323,7 @@ class Taskbar {
 
         // Work area: an invisible strut down the left edge, 8 + 48 + 8 px, so maximised windows start at x = 64.
         this._strut = new St.Widget({name: 'meridianTaskbarStrut', reactive: false, opacity: 0});
-        Main.layoutManager.addChrome(this._strut, {affectsStruts: true, affectsInputRegion: false, trackFullscreen: true});
+        Main.layoutManager.addChrome(this._strut, {affectsStruts: true, trackFullscreen: true});
 
         this.actor = new St.BoxLayout({name: 'meridianTaskbar', orientation: V, reactive: true, style_class: 'meridian-taskbar'});
         Main.layoutManager.addChrome(this.actor, {affectsStruts: false, trackFullscreen: true});
@@ -732,7 +732,7 @@ export default class MeridianShell extends Extension {
         const pb = Main.layoutManager.panelBox;
         // stop the panel reserving space and hide it (it stays alive: its indicators and menus are reused)
         Main.layoutManager.untrackChrome(pb);
-        Main.layoutManager.trackChrome(pb, {affectsStruts: false, trackFullscreen: false, affectsInputRegion: true});
+        Main.layoutManager.trackChrome(pb, {affectsStruts: false, trackFullscreen: false});
         pb.hide();
         this._panelHidden = true;
         this._tiles = new MeridianTiles();
@@ -752,7 +752,7 @@ export default class MeridianShell extends Extension {
         if (this._panelHidden) {
             const pb = Main.layoutManager.panelBox;
             Main.layoutManager.untrackChrome(pb);
-            Main.layoutManager.trackChrome(pb, {affectsStruts: true, trackFullscreen: true, affectsInputRegion: true});
+            Main.layoutManager.trackChrome(pb, {affectsStruts: true, trackFullscreen: true});
             pb.show();
             this._panelHidden = false;
         }
