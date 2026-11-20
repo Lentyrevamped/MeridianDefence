@@ -23,6 +23,8 @@ modules:
         - libcamera-ipa
         - libcamera-tools              # `cam -l` to check the camera
         - pipewire-plugin-libcamera    # camera in PipeWire: Snapshot, browsers, Discord through the camera portal
+        - google-noto-sans-fonts       # Graphite UI font
+        - google-noto-sans-mono-fonts  # Ledger code, terminal
 
   - type: gschema-overrides
     include:
@@ -33,8 +35,8 @@ modules:
       - 10-os-release.sh        # "Meridian OS" name (About page, boot menu entries), keeps ID=secureblue
       - 15-kmods.sh             # signed speaker + camera modules (load once the Meridian MOK is enrolled), camera userspace; before the initramfs rebuild
       - 20-plymouth.sh          # boot splash + disk PIN prompt (stock TPM+PIN unlock), initramfs rebuilt; falls back to stock theme on any error
-      - 30-gnome-extension.sh   # Ledger sign-in card + corporate shell style; each enabled only if it declares the image's GNOME version
-      - 40-user-style.sh        # corporate GTK style per user (navy, square, blue accent), Flatpaks included (read-only)
+      - 30-gnome-extension.sh   # Ledger sign-in column + Graphite shell (taskbar, start menu, quick settings); each enabled only if it declares the image's GNOME version
+      - 40-user-style.sh        # Graphite GTK style per user (5 px windows, steel blue accent), Flatpaks included (read-only)
       - 50-daily.sh             # daily driver: apps on first login, Drive sync timer, keep-screen-on, Brave policy
       - 60-ledger-login.sh      # Ledger-only GDM/lock screen sign-in, active only after `meridian-ledger enroll`; password stays at the TTY
       - 61-ledger-only-gdm.sh    # Ledger users: GDM fingerprint/smartcard services refuse (no bypass); others stock

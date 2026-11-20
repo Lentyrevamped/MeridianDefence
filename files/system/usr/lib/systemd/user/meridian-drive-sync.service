@@ -4,6 +4,8 @@ After=network-online.target
 ConditionPathExists=%h/.config/rclone/rclone.conf
 
 [Service]
+# People only: the sign-in screen's gdm-greeter user manager skips this (condition, not a failure)
+ExecCondition=/usr/libexec/meridian/is-person
 Type=oneshot
 ExecStart=/usr/bin/meridian-drive now --quiet
 Nice=10

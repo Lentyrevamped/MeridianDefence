@@ -1,22 +1,19 @@
-/* Meridian corporate tokens (Gotham references), shared by Meridian OS and Meridian Intel. Revised 19 Nov 14:10 UTC. */
-:root{
-  /* navy-slate surfaces */
-  --m-bg0:#0E141B;  /* screen; OS screens add a soft radial lift #141D27 at centre */
-  --m-bg1:#18212C;  /* card / panel */
-  --m-bg2:#1D2834;  /* panel header (40px) */
-  --m-bg3:#22303F;  /* selected / "on" tile */
-  --m-sunk:#101820; /* inputs, code box */
-  --m-line:#2A3846; --m-line-soft:#222E3B; --m-line-field:#34465A;
-  --m-t1:#E1E7EE; --m-t2:#8B9AAB; --m-t3:#5E6D7E; --m-t-soft:#B7C3D0;
-  /* actions */
-  --m-primary:#2F6FD0; --m-focus:#4C90F0; --m-link:#6AA6F8; --m-btn-off:#253242; --m-success-btn:#238551;
-  /* status */
-  --m-green:#32A467; --m-green-t:#3FBF7F; --m-amber:#E8A33D; --m-red:#E5484D; --m-red-t:#F07A7E;
-  /* top bar: purple; "SECURED" chip (rgba(255,255,255,.14), shield icon) sits just LEFT of the centred clock */
-  --m-band:#4E2A9A; --m-band-t:#F1ECFF;
-  /* shape */
-  --m-r-panel:0px; --m-r-ctl:2px; --m-shadow:0 12px 32px rgba(0,0,0,.35);
-  /* type: Inter title case (no all-caps labels except the SECURED chip); mono only for codes */
-  --m-sans:Inter,system-ui,sans-serif; --m-mono:"JetBrains Mono",ui-monospace,monospace;
-  /* sizes: body 12.5/18, header 13/600, field label 11.5/500 --m-t2, rows 30px, controls 32-34px, status bar 26px */
+/* Meridian OS design tokens: Graphite (approved 19 Nov 2026). One file shared by every layer
+   (Plymouth art, GDM/lock, shell, GTK, Meridian Intel). Logical px at 125 % on 2880x1800. */
+:root {
+  --m-bg: #141414;  --m-bg2: #1A1B1C;  --m-panel: #1F2022;  --m-sunk: #161718;
+  --m-line: #303236;  --m-line2: #3C3E43;
+  --m-t1: #E6E6E6;  --m-t2: #A7A9AD;  --m-t3: #717378;
+  --m-accent: #3D8BFF;
+  --m-hover: rgba(255,255,255,.06);  --m-hover2: rgba(255,255,255,.10);
+  --m-ok: #4FA36E;  --m-bad: #D9575B;  --m-close-hover: #C42B1C;
+  --m-font: "Noto Sans", Inter, sans-serif;  --m-mono: "Noto Sans Mono", monospace;
+  --m-r-win: 5px;  --m-r-ctl: 3px;  --m-r-tb: 2px;
+  /* motion */
+  --m-fast: 120ms ease-out;
+  --m-base: 220ms cubic-bezier(.2,0,0,1);  --m-exit: 240ms cubic-bezier(.4,0,1,1);
+  --m-screen: 320ms cubic-bezier(.2,0,0,1);  --m-rise: 8px;
+  /* type scale */
+  --m-fs-11: 11px; --m-fs-12: 12px; --m-fs-12h: 12.5px; --m-fs-13: 13px; --m-fs-body: 14px;
+  --m-fs-17: 17px; --m-fs-24: 24px; --m-fs-code: 28px; --m-fs-clock: 64px;
 }

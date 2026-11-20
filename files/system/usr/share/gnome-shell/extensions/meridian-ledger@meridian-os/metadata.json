@@ -1,8 +1,14 @@
 {
   "uuid": "meridian-ledger@meridian-os",
   "name": "Meridian Ledger sign-in",
-  "description": "Meridian OS: Ledger confirmation card (code + sign-in checklist) on the login and lock screens. Without it the same Ledger steps show as plain text.",
-  "shell-version": ["51"],
-  "session-modes": ["user", "unlock-dialog", "gdm"],
+  "description": "Meridian OS: Ledger confirmation on the login and lock screens (status line, code, 3-step line). Without it the same Ledger steps show as plain text.",
+  "shell-version": [
+    "51"
+  ],
+  "session-modes": [
+    "user",
+    "unlock-dialog",
+    "gdm"
+  ],
   "version": 1
 }

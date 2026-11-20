@@ -1,0 +1,6 @@
+#!/bin/sh
+# Exit 0 only for a person's account (UID 1000-59999, not a gdm greeter user). Used as ExecCondition= so the
+# sign-in screen's own user manager (gdm-greeter, a dynamic UID such as 60578) skips Meridian's per-user services.
+u=$(id -u); n=$(id -un)
+case "$n" in gdm|gdm-*) exit 1;; esac
+[ "$u" -ge 1000 ] && [ "$u" -lt 60000 ]

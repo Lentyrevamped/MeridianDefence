@@ -1,48 +1,45 @@
-# Meridian OS boot theme (Plymouth script module), corporate style (tokens: /usr/share/meridian/tokens.css).
-# States: intro -> pin -> wait -> splash. Boot card (status rows + progress bar) and disk-unlock card, on the navy
-# wallpaper with its corner mark and the purple SECURED band. Crossfades only (150 ms), no zoom or shake.
+# Meridian OS boot theme (Plymouth script module), Graphite design (tokens: /usr/share/meridian/tokens.css).
+# States: intro -> pin -> wait -> splash. Flat #0E0E0F, centred column (mark, title, field), fades only:
+# 320 ms screen crossfades with an 8 px rise, 120 ms dot fades with a 3 px rise, no shake, no glow.
 # Disk unlock is stock (TPM+PIN, recovery key); this theme only draws the prompt. No Ledger at boot.
-# The status rows show what the image is configured for (Secure Boot, PCR 7+14 sealing); they are not live checks.
 # Art is rendered at 1.25x (GNOME's 125 % on an 1800 px panel) and scaled by S for other panels. No fonts in the initrd.
 
-Window.SetBackgroundTopColor(0.0549, 0.0784, 0.1059);
-Window.SetBackgroundBottomColor(0.0549, 0.0784, 0.1059);
+Window.SetBackgroundTopColor(0.0549, 0.0549, 0.0588);
+Window.SetBackgroundBottomColor(0.0549, 0.0549, 0.0588);
 W = Window.GetWidth(); H = Window.GetHeight(); X0 = Window.GetX(); Y0 = Window.GetY();
 S = H / 1800; if (S > 1.6) S = 1.6;
-CX = X0 + W / 2;
-U = 1.25 * S;                                      # one design px (CSS px of the mockups) on this screen
-fun Y(v) { return Y0 + H / 2 + (v - 900) * S; }
+CX = X0 + W / 2; CY = Y0 + H / 2;
+U = 1.25 * S;                                      # one logical px of the design on this screen
 FPS = 50;
-ground_src = Image("ground.png");
-if (ground_src) { ground = Sprite(ground_src.Scale(W, H)); ground.SetX(X0); ground.SetY(Y0); ground.SetZ(-100); }
 
 fun ld(name) { ld_im = Image(name + ".png"); if (S < 0.999 || S > 1.001) ld_im = ld_im.Scale(Math.Int(ld_im.GetWidth() * S + 0.5), Math.Int(ld_im.GetHeight() * S + 0.5)); return ld_im; }
 fun mk(img, z) { mk_s = Sprite(img); mk_s.SetZ(z); mk_s.SetOpacity(0); return mk_s; }
 fun clamp01(x) { if (x < 0) return 0; if (x > 1) return 1; return x; }
-fun mix(a, b, k) { return a + (b - a) * k; }
+fun ease(x) { x = clamp01(x); return 1 - (1 - x) * (1 - x) * (1 - x); }     # ~cubic-bezier(.2,0,0,1)
+fun easein(x) { x = clamp01(x); return x * x * x; }                          # ~cubic-bezier(.4,0,1,1), exits
+fun at(sp, img, cx, cy, op) { sp.SetImage(img); sp.SetX(Math.Int(cx - img.GetWidth() / 2)); sp.SetY(Math.Int(cy - img.GetHeight() / 2)); sp.SetOpacity(op); }
 
 # ---- assets ----
-c_boot_a = ld("card-boot-a"); c_boot_b = ld("card-boot-b");
-c_pin = ld("card-pin"); c_pin_err = ld("card-pin-err"); c_key = ld("card-key"); c_key_err = ld("card-key-err");
-band_lbl = ld("band-label"); ph_pin = ld("ph"); ph_key = ld("ph-key"); dot_img = ld("dot"); caret_img = ld("caret");
-purple = Image("purple.png"); blue = Image("blue.png"); trackc = Image("track.png");
+i_mark = ld("mark24"); i_mark42 = ld("mark42"); i_tpin = ld("title-pin"); i_tkey = ld("title-key");
+i_fld = ld("field"); i_fld_err = ld("field-err"); i_dot = ld("dot");
+i_epin = ld("err-pin"); i_ekey = ld("err-key"); i_fpin = ld("foot-pin"); i_fkey = ld("foot-key");
+i_word = ld("wordmark"); i_track = Image("track.png"); i_seg = Image("seg.png");
 
-# ---- layout (design px from the renderer's measurements) ----
-CARD_CY = Y(860);
-BAR_X = 15; BAR_Y = 84; BAR_W = 350; BAR_H = 3;      # inside the boot card
-FLD_X = 15; FLD_Y = 80; FLD_W = 350; FLD_H = 34;     # inside the pin card
+# ---- layout (logical px from the centre). Column: mark 24, gap 18, title 24, gap 18, field 42 ----
+C_MARK = -63 + 12; C_TITLE = -63 + 42 + 12; C_FLD = -63 + 84 + 21; C_HINT = C_FLD + 21 + 10 + 9;
+SP_MARK = -(42 + 26 + 22 + 26 + 2) / 2 + 21; SP_WORD = SP_MARK + 21 + 26 + 11; SP_TRACK = SP_WORD + 11 + 26 + 1;
+TRK_W = 130; SEG_W = 40;
 
 # ---- sprites ----
-band = Sprite(purple.Scale(Math.Int(W), Math.Int(24 * U + 0.5))); band.SetX(X0); band.SetY(Y0); band.SetZ(30);
-lbl = Sprite(band_lbl); lbl.SetX(Math.Int(CX - band_lbl.GetWidth() / 2)); lbl.SetY(Math.Int(Y0 + 12 * U - band_lbl.GetHeight() / 2)); lbl.SetZ(31);
-bootc = mk(c_boot_a, 10); track = mk(trackc, 11); bar = mk(blue, 12);
-pinc = mk(c_pin, 10); ph = mk(ph_pin, 12); caret = mk(caret_img, 13);
+s_mark = mk(i_mark, 10); s_title = mk(i_tpin, 10); s_fld = mk(i_fld, 10); s_fld_err = mk(i_fld_err, 11);
+s_hint = mk(i_epin, 10); s_foot = mk(i_fpin, 10);
+s_mark42 = mk(i_mark42, 10); s_word = mk(i_word, 10); s_track = mk(i_track, 10); s_seg = mk(i_seg, 11);
 ndots = 0;
 
 # ---- state ----
 mode = "intro"; tm = 0; t_mode = 0;
-bullets = 0; submitted = 0; err = 0; passmode = 0; last_prompt = "";
-progress = 0; pin_seen = 0; unlocked = 0;
+bullets = 0; submitted = 0; err = 0; t_err = 99; passmode = 0; last_prompt = "";
+pin_op = 0; spl_op = 0; pin_seen = 0;
 fun set_mode(m) { global.mode = m; global.t_mode = 0; }
 
 # ---- callbacks ----
@@ -50,60 +47,67 @@ fun password_cb(prompt, b) {
   if (mode != "pin") {
     # Asked again with the same prompt after an answer = that answer was wrong. A different prompt (recovery key after
     # the PIN failed) is a new question, not an error. Must not depend on timing: the TPM check can take a while.
-    if (submitted && prompt == last_prompt) global.err = 1; else global.err = 0;
+    if (submitted && prompt == last_prompt) { global.err = 1; global.t_err = 0; } else global.err = 0;
     global.submitted = 0;
     set_mode("pin");
   }
-  global.last_prompt = prompt; global.pin_seen = 1; global.unlocked = 0;
+  global.last_prompt = prompt; global.pin_seen = 1;
   global.passmode = 1; pj = 0; while (prompt.CharAt(pj + 2) != "") { if (prompt.CharAt(pj) == "P" && prompt.CharAt(pj + 1) == "I" && prompt.CharAt(pj + 2) == "N") global.passmode = 0; pj++; }
+  if (b > bullets) { for (k = bullets; k < b; k++) global.dt[k] = 0; }
   global.bullets = b;
 }
 Plymouth.SetDisplayPasswordFunction(password_cb);
 fun normal_cb() { if (mode == "pin") { global.submitted = (bullets > 0); set_mode("wait"); } }
 Plymouth.SetDisplayNormalFunction(normal_cb);
-fun progress_cb(duration, p) { global.progress = p; }
-Plymouth.SetBootProgressFunction(progress_cb);
 fun quit_cb() { refresh(); }
 Plymouth.SetQuitFunction(quit_cb);
 
-fun place(sp, img, op) { sp.SetImage(img); sp.SetX(Math.Int(CX - img.GetWidth() / 2)); sp.SetY(Math.Int(CARD_CY - img.GetHeight() / 2)); sp.SetOpacity(op); }
-fun rect(sp, src, x, y, w, h, op) { if (w < 1) w = 1; if (h < 1) h = 1; sp.SetImage(src.Scale(Math.Int(w), Math.Int(h))); sp.SetX(Math.Int(x)); sp.SetY(Math.Int(y)); sp.SetOpacity(op); }
-
-boot_op = 0; pin_op = 0;
 fun refresh() {
-  global.tm += 1 / FPS; global.t_mode += 1 / FPS;
-  if (mode == "intro" && tm > 2.5) set_mode("splash");
-  if (mode == "wait" && t_mode > 0.9) { global.unlocked = 1; global.err = 0; set_mode("splash"); }
-  if (mode == "pin" || mode == "wait") { pt = 1; bt = 0; } else { pt = 0; bt = 1; }
-  k = 1 / (0.15 * FPS);                            # 150 ms linear crossfade
-  if (pin_op < pt) global.pin_op = clamp01(pin_op + k); else global.pin_op = clamp01(pin_op - k);
-  if (boot_op < bt) global.boot_op = clamp01(boot_op + k); else global.boot_op = clamp01(boot_op - k);
-  intro_op = clamp01(tm / 0.3);
+  dtk = 1 / FPS; global.tm += dtk; global.t_mode += dtk; global.t_err += dtk;
+  if (mode == "intro" && tm > 0.6) set_mode("splash");
+  if (mode == "wait" && t_mode > 0.9) { global.err = 0; set_mode("splash"); }
 
-  # ---- boot card ----
-  bo = boot_op * intro_op;
-  if (unlocked || (mode == "splash" && pin_seen == 0 && tm > 6)) ci = c_boot_b; else ci = c_boot_a;
-  place(bootc, ci, bo);
-  left = CX - ci.GetWidth() / 2; top = CARD_CY - ci.GetHeight() / 2;
-  rect(track, trackc, left + BAR_X * U, top + BAR_Y * U, BAR_W * U, BAR_H * U, bo);
-  pr = progress; if (pr < 0.04) pr = 0.04;
-  rect(bar, blue, left + BAR_X * U, top + BAR_Y * U, BAR_W * U * pr, BAR_H * U, bo);
+  # column: in 320 ms with an 8 px rise; out 240 ms (ease-in) once the answer is accepted
+  if (mode == "pin" || mode == "wait") global.pin_op = clamp01(pin_op + dtk / 0.32); else global.pin_op = clamp01(pin_op - dtk / 0.24);
+  if (mode == "splash" && pin_op <= 0) global.spl_op = clamp01(spl_op + dtk / 0.32); else global.spl_op = clamp01(spl_op - dtk / 0.24);
+  if (mode == "pin" || mode == "wait") { po = ease(pin_op); rise = (1 - po) * 8 * U; } else { po = 1 - easein(1 - pin_op); rise = 0; }
 
-  # ---- disk unlock card ----
-  po = pin_op;
-  if (passmode) { if (err) pi = c_key_err; else pi = c_key; } else { if (err) pi = c_pin_err; else pi = c_pin; }
-  place(pinc, pi, po);
-  left = CX - pi.GetWidth() / 2; top = CARD_CY - pi.GetHeight() / 2;
-  fx = left + (FLD_X + 10) * U; fy = top + (FLD_Y + FLD_H / 2) * U;
-  nb = bullets; if (nb > 24) nb = 24;
-  for (i = 0; i < nb; i++) { if (i >= ndots) { global.dots[i] = Sprite(dot_img); global.dots[i].SetZ(12); global.ndots = i + 1; }
-    dots[i].SetX(Math.Int(fx + i * 13 * U)); dots[i].SetY(Math.Int(fy - dot_img.GetHeight() / 2)); dots[i].SetOpacity(po); }
-  for (i = nb; i < ndots; i++) dots[i].SetOpacity(0);
-  if (passmode) phi = ph_key; else phi = ph_pin;
-  if (nb == 0) { ph.SetImage(phi); ph.SetX(Math.Int(fx)); ph.SetY(Math.Int(fy - phi.GetHeight() / 2)); ph.SetOpacity(po); } else ph.SetOpacity(0);
-  blink = Math.Int(tm * 1.9) % 2 == 0;
-  if (nb > 0) cxp = fx + nb * 13 * U - 2 * U; else cxp = fx - 3 * U;
-  caret.SetX(Math.Int(cxp)); caret.SetY(Math.Int(fy - caret_img.GetHeight() / 2));
-  if (blink && mode == "pin") caret.SetOpacity(po); else caret.SetOpacity(0);
+  # ---- disk unlock column ----
+  at(s_mark, i_mark, CX, CY + C_MARK * U + rise, po * 0.55);
+  if (passmode) ti = i_tkey; else ti = i_tpin;
+  at(s_title, ti, CX, CY + C_TITLE * U + rise, po);
+  fy = CY + C_FLD * U + rise;
+  at(s_fld, i_fld, CX, fy, po);
+  # wrong answer: red border + hint for ~2.5 s, then both fade back over 240 ms (no shake)
+  if (err) ek = 1 - clamp01((t_err - 2.5) / 0.24); else ek = 0;
+  at(s_fld_err, i_fld_err, CX, fy, po * ek);
+  if (passmode) hi = i_ekey; else hi = i_epin;
+  at(s_hint, hi, CX, CY + C_HINT * U + rise, po * ek);
+  if (passmode) fi = i_fkey; else fi = i_fpin;
+  at(s_foot, fi, CX, Y0 + H - 24 * U - fi.GetHeight() / 2, po);
+
+  # dots: 8 slots for a PIN (faint until typed), centred; a long recovery key just grows (capped to the field)
+  nb = bullets; if (nb > 30) nb = 30;
+  if (passmode) slots = nb; else { slots = 8; if (nb > 8) slots = nb; }
+  gap = 16 * U; if (slots > 18) gap = 10 * U;
+  x0 = CX - (slots - 1) * gap / 2;
+  for (i = 0; i < slots; i++) {
+    if (i >= ndots) { global.dots[i] = Sprite(i_dot); global.dots[i].SetZ(12); global.dt[i] = 0; global.ndots = i + 1; }
+    if (i < nb) { global.dt[i] += dtk; dk = ease(dt[i] / 0.12); o = 0.14 + 0.86 * dk; r = (1 - dk) * 3 * U; }
+    else { if (passmode) o = 0; else o = 0.14; r = 0; }
+    at(dots[i], i_dot, x0 + i * gap, fy + r, po * o);
+  }
+  for (i = slots; i < ndots; i++) dots[i].SetOpacity(0);
+
+  # ---- splash: mark, wordmark, indeterminate track (segment slides across every 1.6 s) ----
+  so = ease(spl_op); sr = (1 - so) * 8 * U;
+  at(s_mark42, i_mark42, CX, CY + SP_MARK * U + sr, so);
+  at(s_word, i_word, CX, CY + SP_WORD * U + sr, so);
+  ty = CY + SP_TRACK * U + sr; tx = CX - TRK_W * U / 2;
+  s_track.SetImage(i_track.Scale(Math.Int(TRK_W * U), Math.Int(2 * U + 0.5))); s_track.SetX(Math.Int(tx)); s_track.SetY(Math.Int(ty)); s_track.SetOpacity(so);
+  ph = (tm % 1.6) / 1.6; p = ease(ph);
+  a = -SEG_W + (TRK_W + SEG_W) * p; b2 = a + SEG_W; if (a < 0) a = 0; if (b2 > TRK_W) b2 = TRK_W;
+  if (b2 - a >= 1) { s_seg.SetImage(i_seg.Scale(Math.Int((b2 - a) * U), Math.Int(2 * U + 0.5))); s_seg.SetX(Math.Int(tx + a * U)); s_seg.SetY(Math.Int(ty)); s_seg.SetOpacity(so); }
+  else s_seg.SetOpacity(0);
 }
 Plymouth.SetRefreshFunction(refresh);

@@ -1,23 +1,16 @@
-/* Meridian Ledger card, corporate style (tokens: /usr/share/meridian/tokens.css). Sits inside the login/lock prompt card. */
-.meridian-card { spacing: 0; padding-top: 4px; min-width: 360px; }
-.meridian-label { font-size: 12px; font-weight: 500; color: #8B9AAB; padding-bottom: 6px; }
-.meridian-code { border-radius: 0; background-color: #101820; border: 1px solid #34465A; padding: 12px 10px; }
-.meridian-code.ok { border-color: #32A467; }
-.meridian-group { font-family: "JetBrains Mono", "Source Code Pro", monospace; font-size: 19px; font-weight: 500; letter-spacing: 3px; color: #E1E7EE; font-feature-settings: "tnum", "zero"; }
-.meridian-check-head { padding: 16px 0 8px; }
-.meridian-check-title { font-size: 12.5px; font-weight: 600; color: #E1E7EE; }
-.meridian-check-count { font-size: 11.5px; color: #8B9AAB; }
-.meridian-check { border: 1px solid #2A3846; background-color: #151D27; }
-.meridian-check-row { spacing: 10px; padding: 0 12px; height: 36px; border-top: 1px solid #2A3846; }
-.meridian-check-row:first-child { border-top-width: 0; }
-.meridian-mark { width: 14px; height: 14px; border-radius: 7px; border: 1.5px solid #5E6D7E; }
-.meridian-mark.on { border-color: #4C90F0; }
-.meridian-mark.done { border-width: 0; color: #32A467; }
-.meridian-mark.bad { border-width: 0; color: #E5484D; }
-.meridian-check-text { font-size: 12.5px; font-weight: 500; color: #E1E7EE; }
-.meridian-check-hint { font-size: 11.5px; color: #5E6D7E; }
-.meridian-bar { margin-top: 14px; height: 32px; border-radius: 2px; background-color: #253242; color: #8B9AAB; font-size: 12.5px; font-weight: 600; text-align: center; padding-top: 8px; }
-.meridian-bar.ok { background-color: #238551; color: #ffffff; }
-.meridian-bar.bad { background-color: #3A1E24; color: #F07A7E; }
-/* Login screen (greeter only, class added from JS): same navy surface as the boot screen instead of stock grey. */
-#lockDialogGroup.meridian-greeter { background-color: #0E141B; background-image: url("file:///usr/share/backgrounds/meridian/meridian-dark.png"); background-size: cover; }
+/* Meridian Ledger sign-in, Graphite design (tokens: /usr/share/meridian/tokens.css). A column, not a card:
+   status line, the code between hairlines, a 3-segment step line, a help line. */
+.meridian-ledger-mark { icon-size: 20px; margin-bottom: 4px; }
+.meridian-ledger { spacing: 14px; padding-top: 2px; width: 440px; }
+.meridian-ledger-status { font-size: 15px; color: #B5B7BB; text-align: center; }
+.meridian-ledger-code-row { border-top: 1px solid rgba(255,255,255,0.14); border-bottom: 1px solid rgba(255,255,255,0.14); padding: 14px 0; }
+.meridian-ledger-code { font-family: "Noto Sans Mono", monospace; font-size: 28px; font-weight: 500; letter-spacing: 5px; color: #E6E6E6; font-feature-settings: "tnum", "zero"; }
+.meridian-ledger-code.unknown { color: rgba(230,230,230,0.25); }
+.meridian-ledger-steps { spacing: 6px; }
+.meridian-ledger-seg { width: 53px; height: 3px; border-radius: 2px; background-color: rgba(255,255,255,0.16); transition-duration: 200ms; }
+.meridian-ledger-seg.on { background-color: #3D8BFF; }
+.meridian-ledger-seg.done { background-color: #4FA36E; }
+.meridian-ledger-seg.bad { background-color: #D9575B; }
+.meridian-ledger-help { font-size: 12.5px; color: #7E8187; text-align: center; }
+/* Login screen (greeter only, class added from JS): the Graphite wallpaper with a 35 % black dim. */
+#lockDialogGroup.meridian-greeter { background-color: #141414; background-image: url("file:///usr/share/backgrounds/meridian/meridian-greeter.png"); background-size: cover; }
