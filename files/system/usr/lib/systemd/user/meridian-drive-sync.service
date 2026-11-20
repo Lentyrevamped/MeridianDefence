@@ -1,4 +1,6 @@
 [Unit]
+# Real users only, not the sign-in screen (gdm-greeter) user manager
+ConditionUser=!@system
 Description=Google Drive two-way sync (rclone bisync)
 After=network-online.target
 ConditionPathExists=%h/.config/rclone/rclone.conf

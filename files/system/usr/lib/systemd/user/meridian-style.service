@@ -1,4 +1,6 @@
 [Unit]
+# Real users only, not the sign-in screen (gdm-greeter) user manager
+ConditionUser=!@system
 Description=Meridian OS: apply tighter GTK corners for this user (never overwrites custom styles)
 After=graphical-session-pre.target
 

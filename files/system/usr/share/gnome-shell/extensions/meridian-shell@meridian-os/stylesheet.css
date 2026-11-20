@@ -78,7 +78,7 @@ stage { font-family: "Noto Sans", Inter, sans-serif; }
 /* ---------------------------------------------------------------- quick settings (Windows 11 layout, Meridian colours) */
 .quick-settings.meridian-qs { width: 372px; padding: 22px 30px 0 22px; border-radius: 5px; background-color: rgba(31,32,34,0.97); }
 .meridian-qs .quick-settings-grid { spacing-rows: 14px; spacing-columns: 12px; }
-.meridian-qs .quick-toggle, .meridian-qs .quick-toggle-has-menu { min-width: 0; max-width: none; min-height: 0; border-radius: 3px; background-color: transparent; box-shadow: none; padding: 0; color: #E6E6E6; }
+.meridian-qs .quick-toggle, .meridian-qs .quick-toggle-has-menu { min-width: 0; max-width: 10000px; min-height: 0; border-radius: 3px; background-color: transparent; box-shadow: none; padding: 0; color: #E6E6E6; }
 .meridian-qs .quick-toggle:checked { background-color: transparent; }
 .meridian-qs .quick-toggle:hover, .meridian-qs .quick-toggle:focus, .meridian-qs .quick-toggle:active, .meridian-qs .quick-toggle:checked:hover,
 .meridian-qs .quick-toggle-has-menu:hover, .meridian-qs .quick-toggle-has-menu:checked { background-color: transparent; box-shadow: none; }
@@ -204,6 +204,6 @@ StEntry:focus, .search-entry:focus, .login-dialog-prompt-entry:focus { border-co
 /* lock: big clock top-left (placed from JS), date under it, hint bottom-left */
 .meridian-lock-clock .unlock-dialog-clock-time { font-size: 64px; font-weight: 300; font-feature-settings: "tnum"; color: #E6E6E6; }
 .meridian-lock-clock .unlock-dialog-clock-date { font-size: 17px; font-weight: 400; color: #B5B7BB; }
-.meridian-lock-clock .unlock-dialog-clock-hint { font-size: 12.5px; font-weight: 400; color: #8A8D93; }
+.meridian-lock-clock .unlock-dialog-clock-hint { text-align: left; font-size: 12.5px; font-weight: 400; color: #8A8D93; }
 .unlock-dialog-notifications-container .notification, .unlock-dialog-notifications-container .summary-notification-stack-scrollview { border-radius: 5px; background-color: rgba(31,32,34,0.92); border: 1px solid #303236; }
 .screen-shield-background { background-color: #141414; }

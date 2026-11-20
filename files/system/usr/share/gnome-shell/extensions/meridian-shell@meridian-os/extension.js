@@ -94,8 +94,8 @@ class Tip {
         this.actor.show(); this.actor.remove_all_transitions(); this.actor.opacity = 0;
         this.actor.ease({opacity: 255, duration: 120, mode: Clutter.AnimationMode.EASE_OUT_QUAD});
     }
-    hide() { if (this._t) { GLib.Source.remove(this._t); this._t = 0; } this.actor.hide(); }
-    destroy() { this.hide(); this.actor.destroy(); }
+    hide() { if (this._t) { GLib.Source.remove(this._t); this._t = 0; } if (!this._gone) this.actor.hide(); }
+    destroy() { this.hide(); this._gone = true; this.actor.destroy(); }
 }
 
 // ---------------------------------------------------------------- start menu
@@ -130,6 +130,7 @@ class StartMenu extends PopupMenu.PopupMenu {
         this._avatar = new Avatar(user, {iconSize: 28, styleClass: 'meridian-start-avatar'});
         this._name = new St.Label({style_class: 'meridian-start-name', y_align: Clutter.ActorAlign.CENTER});
         const setName = () => { this._avatar.update(); this._name.text = user.get_real_name() || GLib.get_user_name(); };
+        this._user = user;
         user.connectObject('notify::is-loaded', setName, 'changed', setName, this);
         setName();
         who.add_child(this._avatar); who.add_child(this._name);
@@ -258,7 +259,7 @@ class StartMenu extends PopupMenu.PopupMenu {
 
     _activateFirst() { this._first?.(); }
 
-    destroy() { this._powerMenu?.destroy(); super.destroy(); }
+    destroy() { this._user?.disconnectObject(this); this._powerMenu?.destroy(); super.destroy(); }
 }
 
 // ---------------------------------------------------------------- extra quick settings tiles
@@ -461,7 +462,7 @@ class Taskbar {
             this._apps.destroy_all_children();
             this._btns = new Map();
             for (const app of list) {
-                const b = new St.Button({style_class: 'meridian-tb-btn meridian-tb-app', can_focus: true, x_align: Clutter.ActorAlign.CENTER, accessible_name: app.get_name(), button_mask: St.ButtonMask.ONE | St.ButtonMask.TWO | St.ButtonMask.THREE});
+                const b = new St.Button({style_class: 'meridian-tb-btn meridian-tb-app', can_focus: true, x_align: Clutter.ActorAlign.CENTER, accessible_name: app.get_name(), button_mask: St.ButtonMask.PRIMARY | St.ButtonMask.MIDDLE | St.ButtonMask.SECONDARY});
                 // [marker 3 px][icon, centred][3 px spacer]: the marker sits at the button's left edge, never over the icon
                 const w = new St.BoxLayout({style_class: 'meridian-tb-app-row', x_expand: true, y_expand: true, x_align: Clutter.ActorAlign.FILL});
                 const ic = app.create_icon_texture(ICON);
@@ -529,9 +530,9 @@ class Taskbar {
         this._restoreIndicators();
         this._ctx?.destroy();
         this._startMenu?.destroy();
-        this._tip.destroy();
-        Main.layoutManager.removeChrome(this.actor); this.actor.destroy();
+        Main.layoutManager.removeChrome(this.actor); this.actor.destroy();   // buttons first: their destroy handlers use the tooltip
         Main.layoutManager.removeChrome(this._strut); this._strut.destroy();
+        this._tip.destroy();
     }
 }
 
@@ -815,7 +816,10 @@ export default class MeridianShell extends Extension {
             const hint = clock._hint;
             if (hint) {
                 hint.text = 'Press any key or connect your Ledger to unlock';
-                hint.remove_all_transitions(); hint.opacity = 255;   // spec: always shown (stock fades it in after 4 s idle)
+                // spec: always shown. Stock hides it and fades it in after 4 s idle, so keep pinning it to 255.
+                const pin = () => { if (hint.opacity < 255) { hint.remove_all_transitions(); hint.opacity = 255; } };
+                hint.connectObject('notify::opacity', pin, this); pin();
+                hint.x_align = Clutter.ActorAlign.START;
                 hint.connectObject('notify::text', () => { if (hint.text !== 'Press any key or connect your Ledger to unlock') hint.text = 'Press any key or connect your Ledger to unlock'; }, this);
             }
         }
