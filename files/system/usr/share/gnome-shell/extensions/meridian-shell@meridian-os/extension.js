@@ -41,8 +41,8 @@ function imageStatus() {
     return 'Meridian OS';
 }
 
-let warned = false;
-const safe = (fn, fallback) => (...a) => { try { return fn(...a); } catch (e) { if (!warned) { warned = true; console.warn(`[meridian-shell] ${e}\n${e.stack}`); } return fallback?.(...a); } };
+const warned = new Set();   // each distinct error is logged once (max 20), so one noisy error cannot hide a later one
+const safe = (fn, fallback) => (...a) => { try { return fn(...a); } catch (e) { const k = `${e}`; if (!warned.has(k) && warned.size < 20) { warned.add(k); console.warn(`[meridian-shell] ${e}\n${e.stack}`); } return fallback?.(...a); } };
 const anim = () => St.Settings.get().enable_animations;
 const scale = () => St.ThemeContext.get_for_stage(global.stage).scale_factor;
 function fadeRise(actor, {delay = 0, dx = 0, dy = 8, duration = 320} = {}) {
@@ -65,8 +65,8 @@ function besideTaskbar(inj, menu, taskbar, alignment) {
     bp._arrowSide = bp._userArrowSide = St.Side.LEFT;
     bp.add_style_class_name('meridian-popover-bar');
     inj.overrideMethod(bp, 'setPosition', orig => function (_source, _align) {
+        this._sourceAlignment = alignment;   // not setSourceAlignment(): it calls setPosition() again (recursion)
         orig.call(this, taskbar, alignment);
-        this.setSourceAlignment(alignment);
     });
 }
 
@@ -78,7 +78,7 @@ class Tip {
     }
     attach(button, textFn) {
         button.connect('notify::hover', () => {
-            GLib.Source.remove(this._t ?? 0); this._t = 0;
+            if (this._t) { GLib.Source.remove(this._t); this._t = 0; }
             if (!button.hover) { this.hide(); return; }
             this._t = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 500, () => { this._t = 0; safe(() => this.show(button, textFn()))(); return GLib.SOURCE_REMOVE; });
         });
@@ -236,7 +236,7 @@ class StartMenu extends PopupMenu.PopupMenu {
             const app = sys.lookup_app(id);
             if (!app) continue;
             const b = new St.Button({style_class: 'meridian-start-result', can_focus: true, x_expand: true});
-            const row = new St.BoxLayout({style_class: 'meridian-start-result-row'});
+            const row = new St.BoxLayout({style_class: 'meridian-start-result-row', x_expand: true, x_align: Clutter.ActorAlign.START});
             row.add_child(app.create_icon_texture(24));
             row.add_child(new St.Label({text: app.get_name(), y_align: Clutter.ActorAlign.CENTER}));
             b.set_child(row);
@@ -246,7 +246,7 @@ class StartMenu extends PopupMenu.PopupMenu {
         }
         // Everything else (files, settings, calculator, ...) goes to the full search in the overview.
         const all = new St.Button({style_class: 'meridian-start-result more', can_focus: true, x_expand: true});
-        const row = new St.BoxLayout({style_class: 'meridian-start-result-row'});
+        const row = new St.BoxLayout({style_class: 'meridian-start-result-row', x_expand: true, x_align: Clutter.ActorAlign.START});
         row.add_child(icon('system-search-symbolic', 16));
         row.add_child(new St.Label({text: `Search files and settings for "${q}"`, y_align: Clutter.ActorAlign.CENTER}));
         all.set_child(row);
@@ -267,7 +267,7 @@ class KeepAwakeToggle extends QuickSettings.QuickToggle {
     _init() {
         super._init({title: 'Keep screen on', iconName: 'video-display-symbolic', toggleMode: false});
         const dir = Gio.File.new_for_path(GLib.path_get_dirname(KEEP_AWAKE_STATE()));
-        safe(() => { dir.make_directory_with_parents(null); })();
+        safe(() => { if (!dir.query_exists(null)) dir.make_directory_with_parents(null); })();
         this._mon = dir.monitor_directory(Gio.FileMonitorFlags.NONE, null);
         this._mon.connect('changed', () => this._sync());
         this.connect('clicked', () => safe(() => Gio.Subprocess.new(['meridian-keepawake', this.checked ? 'off' : 'on'], Gio.SubprocessFlags.NONE))());
@@ -462,11 +462,12 @@ class Taskbar {
             this._btns = new Map();
             for (const app of list) {
                 const b = new St.Button({style_class: 'meridian-tb-btn meridian-tb-app', can_focus: true, x_align: Clutter.ActorAlign.CENTER, accessible_name: app.get_name(), button_mask: St.ButtonMask.ONE | St.ButtonMask.TWO | St.ButtonMask.THREE});
-                const w = new St.Widget({layout_manager: new Clutter.BinLayout(), x_expand: true, y_expand: true});
+                // [marker 3 px][icon, centred][3 px spacer]: the marker sits at the button's left edge, never over the icon
+                const w = new St.BoxLayout({style_class: 'meridian-tb-app-row', x_expand: true, y_expand: true, x_align: Clutter.ActorAlign.FILL});
                 const ic = app.create_icon_texture(ICON);
-                ic.x_align = ic.y_align = Clutter.ActorAlign.CENTER;
-                const mark = new St.Widget({style_class: 'meridian-tb-marker', x_align: Clutter.ActorAlign.START, y_align: Clutter.ActorAlign.CENTER, translation_x: -4 * scale()});
-                w.add_child(ic); w.add_child(mark);
+                ic.x_expand = true; ic.x_align = ic.y_align = Clutter.ActorAlign.CENTER;
+                const mark = new St.Widget({style_class: 'meridian-tb-marker', y_align: Clutter.ActorAlign.CENTER});
+                w.add_child(mark); w.add_child(ic); w.add_child(new St.Widget({style_class: 'meridian-tb-marker-pad'}));
                 b.set_child(w);
                 b.connect('clicked', (_b, btn) => safe(() => this._click(app, btn, b))());
                 this._tip.attach(b, () => app.get_name());
@@ -506,6 +507,7 @@ class Taskbar {
         this._ctx?.destroy();
         const menu = new AppMenu(actor, St.Side.LEFT, {favoritesSection: true, showSingleWindows: true});
         menu.setApp(app);
+        menu._arrowAlignment = 0;   // top-aligned with the icon (Windows), not centred on it
         menu.actor.add_style_class_name('meridian-popover');
         Main.uiGroup.add_child(menu.actor);
         this._menus.addMenu(menu);
@@ -813,6 +815,7 @@ export default class MeridianShell extends Extension {
             const hint = clock._hint;
             if (hint) {
                 hint.text = 'Press any key or connect your Ledger to unlock';
+                hint.remove_all_transitions(); hint.opacity = 255;   // spec: always shown (stock fades it in after 4 s idle)
                 hint.connectObject('notify::text', () => { if (hint.text !== 'Press any key or connect your Ledger to unlock') hint.text = 'Press any key or connect your Ledger to unlock'; }, this);
             }
         }

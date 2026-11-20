@@ -17,6 +17,8 @@ stage { font-family: "Noto Sans", Inter, sans-serif; }
 .meridian-tb-divider { width: 29px; height: 1px; margin: 6px 0; background-color: rgba(255,255,255,0.12); }
 .meridian-tb-apps { spacing: 2px; }
 .meridian-tb-app.focused { background-color: rgba(255,255,255,0.10); }
+.meridian-tb-app-row { padding: 0 0 0 1px; }
+.meridian-tb-marker-pad { width: 4px; }
 .meridian-tb-marker { width: 3px; height: 6px; border-radius: 2px; background-color: #717378; transition-duration: 200ms; }
 .meridian-tb-marker.focused { height: 16px; background-color: #3D8BFF; }
 .meridian-tb-tray { padding: 4px 0; spacing: 8px; }
@@ -62,7 +64,7 @@ stage { font-family: "Noto Sans", Inter, sans-serif; }
 .meridian-start-file-name { font-size: 13px; }
 .meridian-start-file-time { font-size: 11px; color: #A7A9AD; }
 .meridian-start-results { spacing: 2px; }
-.meridian-start-result { border-radius: 3px; padding: 8px 10px; color: #E6E6E6; }
+.meridian-start-result { text-align: left; border-radius: 3px; padding: 8px 10px; color: #E6E6E6; }
 .meridian-start-result:hover, .meridian-start-result:focus { background-color: rgba(255,255,255,0.06); }
 .meridian-start-result.more { color: #A7A9AD; }
 .meridian-start-result-row { spacing: 12px; font-size: 13px; }
@@ -84,7 +86,7 @@ stage { font-family: "Noto Sans", Inter, sans-serif; }
 .meridian-qs .quick-toggle.meridian-qs-plain > StBoxLayout.meridian-qs-cell, .meridian-qs .quick-toggle.meridian-qs-plain:ltr > StBoxLayout.meridian-qs-cell,
 .meridian-qs .meridian-qs-split > StBoxLayout.meridian-qs-cell, .meridian-qs .meridian-qs-split:ltr > StBoxLayout.meridian-qs-cell { padding: 0; spacing: 7px; }
 .meridian-qs .meridian-qs-split .meridian-qs-tile > .quick-toggle:ltr > StBoxLayout, .meridian-qs .meridian-qs-split .meridian-qs-tile > .quick-toggle > StBoxLayout { padding: 0; }
-.meridian-qs-label { font-size: 12px; color: #E6E6E6; text-align: center; }
+.meridian-qs-label { font-size: 12px; font-weight: 400; color: #E6E6E6; text-align: center; }
 /* plain tile */
 .meridian-qs-plain .meridian-qs-tile { width: 96px; height: 48px; padding: 0; border-radius: 3px; background-color: rgba(255,255,255,0.065); border: 1px solid rgba(255,255,255,0.07); transition-duration: 120ms; }
 .meridian-qs-plain:hover .meridian-qs-tile { background-color: rgba(255,255,255,0.10); }
