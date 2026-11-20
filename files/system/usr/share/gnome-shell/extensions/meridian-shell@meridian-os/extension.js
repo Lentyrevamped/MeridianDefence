@@ -834,7 +834,12 @@ export default class MeridianShell extends Extension {
         const [, dyy] = dialog.get_transformed_position();
         place(t, dx + 48 * s, dyy + 40 * s);
         if (t && d) place(d, dx + 48 * s, dyy + 40 * s + t.height + 4 * s);
-        if (h) place(h, dx + 48 * s, dyy + dialog.height - 40 * s - h.height);
+        if (h?.has_allocation()) {
+            // align the drawn text, not the label box (the label pads/centres its text inside a wider allocation)
+            const [hx] = h.get_transformed_position(), [tx] = h.clutter_text.get_transformed_position();
+            const [lx] = h.clutter_text.get_layout_offsets();
+            place(h, dx + 48 * s - (tx - hx) - lx, dyy + dialog.height - 40 * s - h.height);
+        }
     }
 
     disable() {

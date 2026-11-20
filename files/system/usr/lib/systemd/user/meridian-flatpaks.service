@@ -1,11 +1,11 @@
 [Unit]
-# Real users only, not the sign-in screen (gdm-greeter) user manager
-ConditionUser=!@system
 Description=Meridian OS apps (Flatpak, per user)
 Wants=network-online.target
 After=network-online.target
 
 [Service]
+# People only: the sign-in screen's gdm-greeter user manager skips this (condition, not a failure)
+ExecCondition=/usr/libexec/meridian/is-person
 Type=oneshot
 ExecStart=/usr/libexec/meridian/flatpak-setup
 Restart=on-failure
